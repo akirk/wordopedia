@@ -20,6 +20,7 @@ class App extends BaseApp {
     const META_THUMBNAIL_URL  = '_wordopedia_thumbnail_url';
     const META_LAST_REVISION  = '_wordopedia_last_revision';
     const META_REMOTE_TOUCHED = '_wordopedia_remote_touched';
+    const META_TOCDATA        = '_wordopedia_tocdata';
     const META_SAVED_AT       = '_wordopedia_saved_at';
     const META_REFETCHED_AT   = '_wordopedia_refetched_at';
     const META_SNIPPET_ORIGINAL_TEXT = '_wordopedia_snippet_original_text';
@@ -247,6 +248,13 @@ class App extends BaseApp {
                     'auth_callback'     => $auth_callback,
                 ] );
             }
+
+            register_post_meta( $post_type, self::META_TOCDATA, [
+                'type'          => 'string',
+                'single'        => true,
+                'show_in_rest'  => false,
+                'auth_callback' => $auth_callback,
+            ] );
         }
 
         foreach ( [ self::META_SNIPPET_ORIGINAL_TEXT ] as $meta_key ) {
@@ -773,9 +781,7 @@ class App extends BaseApp {
             return $article;
         }
 
-        return [
-            'article' => $article,
-        ];
+        return self::format_ability_article( $article );
     }
 
     public function ability_save_article( $input ) {
@@ -786,9 +792,7 @@ class App extends BaseApp {
             return $saved;
         }
 
-        return [
-            'article' => $saved,
-        ];
+        return $saved;
     }
 
     public function ability_list_article_media( $input ) {
@@ -836,9 +840,7 @@ class App extends BaseApp {
             return new \WP_Error( 'wordopedia_article_not_found', __( 'Saved Wikipedia article not found.', 'wordopedia' ) );
         }
 
-        return [
-            'article' => self::format_ability_article( self::format_saved_article( $post, true ) ),
-        ];
+        return self::format_ability_article( self::format_saved_article( $post, true ) );
     }
 
     public function ability_refetch_saved_article( $input ) {
@@ -850,17 +852,25 @@ class App extends BaseApp {
             return $saved;
         }
 
-        return [
-            'article' => $saved,
-        ];
+        return $saved;
     }
 
     private static function format_ability_article( array $article ): array {
-        if ( ! array_key_exists( 'html', $article ) && array_key_exists( 'content', $article ) ) {
-            $article['html'] = $article['content'];
+        $html = '';
+        if ( array_key_exists( 'html', $article ) && is_scalar( $article['html'] ) ) {
+            $html = (string) $article['html'];
+        } elseif ( array_key_exists( 'content', $article ) && is_scalar( $article['content'] ) ) {
+            $html = (string) $article['content'];
         }
 
+        $tocdata = isset( $article['tocdata'] ) && is_array( $article['tocdata'] ) ? $article['tocdata'] : [];
+        $sectioned = self::section_article_html( $html, $tocdata );
+        $article['outline']  = $sectioned['outline'];
+        $article['sections'] = $sectioned['sections'];
+
+        unset( $article['html'] );
         unset( $article['content'] );
+        unset( $article['tocdata'] );
 
         if ( isset( $article['snippets'] ) && is_array( $article['snippets'] ) ) {
             foreach ( $article['snippets'] as $index => $snippet ) {
@@ -871,6 +881,324 @@ class App extends BaseApp {
         }
 
         return $article;
+    }
+
+    private static function section_article_html( string $html, array $tocdata = [] ): array {
+        $fallback = [
+            'outline'  => [
+                'lead' => [
+                    'title' => __( 'Lead', 'wordopedia' ),
+                ],
+            ],
+            'sections' => [
+                'lead' => [
+                    'title'      => __( 'Lead', 'wordopedia' ),
+                    'path'       => [ __( 'Lead', 'wordopedia' ) ],
+                    'html'       => $html,
+                    'word_count' => self::html_word_count( $html ),
+                ],
+            ],
+        ];
+
+        if ( '' === trim( $html ) || ! class_exists( '\DOMDocument' ) ) {
+            return $fallback;
+        }
+
+        $previous = libxml_use_internal_errors( true );
+        $document = new \DOMDocument();
+        $flags = 0;
+        if ( defined( 'LIBXML_HTML_NOIMPLIED' ) ) {
+            $flags |= LIBXML_HTML_NOIMPLIED;
+        }
+        if ( defined( 'LIBXML_HTML_NODEFDTD' ) ) {
+            $flags |= LIBXML_HTML_NODEFDTD;
+        }
+
+        $loaded = $document->loadHTML( '<?xml encoding="utf-8" ?><div id="wordopedia-app-section-root">' . $html . '</div>', $flags );
+        libxml_clear_errors();
+        libxml_use_internal_errors( $previous );
+
+        if ( ! $loaded ) {
+            return $fallback;
+        }
+
+        $root = $document->getElementById( 'wordopedia-app-section-root' );
+        if ( ! $root ) {
+            return $fallback;
+        }
+
+        $container = self::article_section_container( $root );
+        $lead_title = __( 'Lead', 'wordopedia' );
+        $records = self::article_section_records_from_tocdata( $tocdata, $lead_title );
+        if ( ! $records ) {
+            return $fallback;
+        }
+
+        $anchor_map = self::article_section_anchor_map( $records );
+        $current_key = 'lead';
+
+        foreach ( $container->childNodes as $child ) {
+            if ( self::is_article_toc_node( $child ) ) {
+                continue;
+            }
+
+            $heading_level = self::article_heading_level( $child );
+            if ( $heading_level ) {
+                $base_key = self::article_heading_key( $child, trim( self::plain_text( $child->textContent ) ) );
+                if ( isset( $anchor_map[ $base_key ] ) ) {
+                    $current_key = $anchor_map[ $base_key ];
+                }
+                continue;
+            }
+
+            if ( isset( $records[ $current_key ] ) ) {
+                $records[ $current_key ]['html'] .= $document->saveHTML( $child );
+            }
+        }
+
+        foreach ( array_keys( $records ) as $key ) {
+            $records[ $key ]['html'] = trim( $records[ $key ]['html'] );
+        }
+
+        if ( '' === $records['lead']['html'] && count( $records ) > 1 ) {
+            unset( $records['lead'] );
+        }
+
+        $sections = [];
+        foreach ( $records as $key => $record ) {
+            $sections[ $key ] = [
+                'title'      => $record['title'],
+                'path'       => $record['path'],
+                'html'       => $record['html'],
+                'word_count' => self::html_word_count( $record['html'] ),
+            ];
+        }
+
+        return [
+            'outline'  => self::article_outline_from_records( $records ),
+            'sections' => $sections,
+        ];
+    }
+
+    private static function article_section_records_from_tocdata( array $tocdata, string $lead_title ): array {
+        $toc_sections = isset( $tocdata['sections'] ) && is_array( $tocdata['sections'] ) ? $tocdata['sections'] : [];
+        if ( ! $toc_sections ) {
+            return [];
+        }
+
+        $records = [
+            'lead' => [
+                'key'    => 'lead',
+                'title'  => $lead_title,
+                'path'   => [ $lead_title ],
+                'level'  => 1,
+                'parent' => '',
+                'html'   => '',
+            ],
+        ];
+        $used_keys = [ 'lead' => true ];
+        $stack = [];
+
+        foreach ( $toc_sections as $toc_section ) {
+            if ( ! is_array( $toc_section ) ) {
+                continue;
+            }
+
+            $title = isset( $toc_section['line'] ) && is_scalar( $toc_section['line'] ) ? trim( self::plain_text( (string) $toc_section['line'] ) ) : '';
+            if ( '' === $title ) {
+                $title = isset( $toc_section['anchor'] ) && is_scalar( $toc_section['anchor'] ) ? str_replace( '_', ' ', (string) $toc_section['anchor'] ) : __( 'Untitled section', 'wordopedia' );
+            }
+
+            $base_key = self::article_tocdata_section_key( $toc_section, $title );
+            $key = self::unique_article_section_key( $base_key, $used_keys );
+            $level = isset( $toc_section['tocLevel'] ) ? absint( $toc_section['tocLevel'] ) : 0;
+            if ( ! $level && isset( $toc_section['hLevel'] ) ) {
+                $level = max( 1, absint( $toc_section['hLevel'] ) - 1 );
+            }
+            $level = max( 1, $level );
+
+            foreach ( array_keys( $stack ) as $stack_level ) {
+                if ( $stack_level >= $level ) {
+                    unset( $stack[ $stack_level ] );
+                }
+            }
+
+            $parent = null;
+            if ( $stack ) {
+                $parent_level = max( array_keys( $stack ) );
+                $parent = $stack[ $parent_level ];
+            }
+
+            $path = $parent ? array_merge( $parent['path'], [ $title ] ) : [ $title ];
+            $records[ $key ] = [
+                'key'    => $key,
+                'title'  => $title,
+                'path'   => $path,
+                'level'  => $level,
+                'parent' => $parent['key'] ?? '',
+                'html'   => '',
+            ];
+
+            $stack[ $level ] = [
+                'key'  => $key,
+                'path' => $path,
+            ];
+        }
+
+        return count( $records ) > 1 ? $records : [];
+    }
+
+    private static function article_tocdata_section_key( array $toc_section, string $title ): string {
+        foreach ( [ 'anchor', 'linkAnchor' ] as $field ) {
+            if ( isset( $toc_section[ $field ] ) && is_scalar( $toc_section[ $field ] ) && '' !== trim( (string) $toc_section[ $field ] ) ) {
+                $key = sanitize_title( rawurldecode( (string) $toc_section[ $field ] ) );
+                if ( '' !== $key ) {
+                    return $key;
+                }
+            }
+        }
+
+        $key = sanitize_title( $title );
+        return '' !== $key ? $key : 'section';
+    }
+
+    private static function article_section_anchor_map( array $records ): array {
+        $map = [];
+        foreach ( $records as $key => $record ) {
+            if ( empty( $record['key'] ) || 'lead' === $record['key'] ) {
+                continue;
+            }
+
+            $map[ sanitize_title( (string) $record['key'] ) ] = (string) $record['key'];
+        }
+
+        return $map;
+    }
+
+    private static function article_section_container( \DOMElement $root ): \DOMElement {
+        foreach ( $root->childNodes as $child ) {
+            if ( $child instanceof \DOMElement && false !== strpos( ' ' . $child->getAttribute( 'class' ) . ' ', ' mw-parser-output ' ) ) {
+                return $child;
+            }
+        }
+
+        return $root;
+    }
+
+    private static function is_article_toc_node( \DOMNode $node ): bool {
+        if ( ! $node instanceof \DOMElement ) {
+            return false;
+        }
+
+        $id = strtolower( $node->getAttribute( 'id' ) );
+        $class = strtolower( ' ' . $node->getAttribute( 'class' ) . ' ' );
+
+        return 'toc' === $id || false !== strpos( $class, ' toc ' ) || false !== strpos( $class, ' vector-toc ' );
+    }
+
+    private static function article_heading_level( \DOMNode $node ): int {
+        if ( ! $node instanceof \DOMElement ) {
+            return 0;
+        }
+
+        if ( preg_match( '/^h([2-6])$/i', $node->tagName, $matches ) ) {
+            return (int) $matches[1];
+        }
+
+        $class = ' ' . $node->getAttribute( 'class' ) . ' ';
+        if ( false !== strpos( $class, ' mw-heading ' ) && preg_match( '/\bmw-heading([2-6])\b/', $class, $matches ) ) {
+            return (int) $matches[1];
+        }
+
+        foreach ( [ 'h2', 'h3', 'h4', 'h5', 'h6' ] as $tag_name ) {
+            if ( $node->getElementsByTagName( $tag_name )->length ) {
+                return (int) substr( $tag_name, 1 );
+            }
+        }
+
+        return 0;
+    }
+
+    private static function article_heading_key( \DOMElement $heading, string $title ): string {
+        $id = trim( $heading->getAttribute( 'id' ) );
+        if ( '' === $id ) {
+            foreach ( [ 'h2', 'h3', 'h4', 'h5', 'h6' ] as $tag_name ) {
+                foreach ( $heading->getElementsByTagName( $tag_name ) as $heading_child ) {
+                    $id = trim( $heading_child->getAttribute( 'id' ) );
+                    if ( '' !== $id ) {
+                        break 2;
+                    }
+                }
+            }
+        }
+        if ( '' === $id ) {
+            foreach ( $heading->getElementsByTagName( 'span' ) as $span ) {
+                $id = trim( $span->getAttribute( 'id' ) );
+                if ( '' !== $id ) {
+                    break;
+                }
+            }
+        }
+
+        $key = sanitize_title( rawurldecode( '' !== $id ? $id : $title ) );
+        return '' !== $key ? $key : 'section';
+    }
+
+    private static function unique_article_section_key( string $base_key, array &$used_keys ): string {
+        $key = $base_key;
+        $suffix = 2;
+
+        while ( isset( $used_keys[ $key ] ) ) {
+            $key = $base_key . '-' . $suffix;
+            ++$suffix;
+        }
+
+        $used_keys[ $key ] = true;
+        return $key;
+    }
+
+    private static function article_outline_from_records( array $records ): array {
+        $children = [];
+        foreach ( $records as $key => $record ) {
+            $parent = isset( $record['parent'] ) ? (string) $record['parent'] : '';
+            $children[ $parent ][] = $key;
+        }
+
+        return self::article_outline_children( $records, $children, '' );
+    }
+
+    private static function article_outline_children( array $records, array $children, string $parent_key ): array {
+        $outline = [];
+        foreach ( $children[ $parent_key ] ?? [] as $key ) {
+            if ( ! isset( $records[ $key ] ) ) {
+                continue;
+            }
+
+            $entry = [
+                'title' => $records[ $key ]['title'],
+            ];
+            $section_children = self::article_outline_children( $records, $children, $key );
+            if ( $section_children ) {
+                $entry['sections'] = $section_children;
+            }
+
+            $outline[ $key ] = $entry;
+        }
+
+        return $outline;
+    }
+
+    private static function html_word_count( string $html ): int {
+        $text = self::plain_text( $html );
+        if ( '' === $text ) {
+            return 0;
+        }
+
+        if ( preg_match_all( '/[\p{L}\p{N}]+/u', $text, $matches ) ) {
+            return count( $matches[0] );
+        }
+
+        return str_word_count( $text );
     }
 
     public function register_ai_assistant_ability_domains( array $domains ): array {
@@ -1036,12 +1364,13 @@ class App extends BaseApp {
             return $metadata;
         }
 
-        $html = self::fetch_article_html( $language, $metadata['page_id'], $metadata['title'], $force_refresh );
-        if ( is_wp_error( $html ) ) {
-            return $html;
+        $parsed = self::fetch_article_html( $language, $metadata['page_id'], $metadata['title'], $force_refresh );
+        if ( is_wp_error( $parsed ) ) {
+            return $parsed;
         }
 
-        $metadata['html']    = $html;
+        $metadata['html']    = $parsed['html'];
+        $metadata['tocdata'] = $parsed['tocdata'];
         $metadata['app_url'] = self::get_article_url( $metadata['language'], $metadata['title'], $metadata['page_id'] );
 
         $saved_article_id = self::find_saved_article_id( $metadata['page_id'], $metadata['language'] );
@@ -1112,7 +1441,7 @@ class App extends BaseApp {
     private static function fetch_article_html( string $language, int $page_id, string $title, bool $force_refresh = false ) {
         $args = [
             'action'             => 'parse',
-            'prop'               => 'text',
+            'prop'               => 'text|tocdata',
             'disableeditsection' => 1,
             'disabletoc'         => 0,
             'redirects'          => 1,
@@ -1142,7 +1471,10 @@ class App extends BaseApp {
             return new \WP_Error( 'wordopedia_empty_article_html', __( 'Wikipedia returned an empty article body.', 'wordopedia' ) );
         }
 
-        return self::sanitize_article_html( $html, $language );
+        return [
+            'html'    => self::sanitize_article_html( $html, $language ),
+            'tocdata' => isset( $data['parse']['tocdata'] ) && is_array( $data['parse']['tocdata'] ) ? $data['parse']['tocdata'] : [],
+        ];
     }
 
     public static function fetch_wordopedia_article_media( array $input ) {
@@ -2039,6 +2371,7 @@ class App extends BaseApp {
         update_post_meta( $post_id, self::META_THUMBNAIL_URL, esc_url_raw( $article['thumbnail_url'] ) );
         update_post_meta( $post_id, self::META_LAST_REVISION, sanitize_text_field( $article['last_revision_id'] ) );
         update_post_meta( $post_id, self::META_REMOTE_TOUCHED, sanitize_text_field( $article['remote_touched'] ) );
+        update_post_meta( $post_id, self::META_TOCDATA, ! empty( $article['tocdata'] ) && is_array( $article['tocdata'] ) ? wp_slash( wp_json_encode( $article['tocdata'], JSON_UNESCAPED_UNICODE ) ) : '' );
 
         if ( $created || ! get_post_meta( $post_id, self::META_SAVED_AT, true ) ) {
             update_post_meta( $post_id, self::META_SAVED_AT, current_time( 'mysql' ) );
@@ -2184,8 +2517,10 @@ class App extends BaseApp {
         ];
 
         if ( $include_content ) {
+            $tocdata = json_decode( (string) get_post_meta( $post_id, self::META_TOCDATA, true ), true );
             $article['content'] = $post->post_content;
             $article['html']    = $post->post_content;
+            $article['tocdata'] = is_array( $tocdata ) ? $tocdata : [];
             $article['snippets'] = self::get_saved_article_snippets( $post_id, true );
         }
 
@@ -3155,49 +3490,40 @@ class App extends BaseApp {
         return [
             'type'       => 'object',
             'properties' => [
-                'article' => [
-                    'type'       => 'object',
-                    'properties' => [
-                        'page_id'             => [ 'type' => 'integer', 'description' => 'Use with wordopedia/save-article.' ],
-                        'title'               => [ 'type' => 'string' ],
-                        'extract'             => [ 'type' => 'string' ],
-                        'summary'             => [ 'type' => 'string' ],
-                        'html'                => [ 'type' => 'string' ],
-                        'language'            => [ 'type' => 'string' ],
-                        'language_label'      => [ 'type' => 'string' ],
-                        'available_languages' => [
-                            'type'  => 'array',
-                            'items' => [
-                                'type'       => 'object',
-                                'properties' => [
-                                    'language'       => [ 'type' => 'string' ],
-                                    'language_label' => [ 'type' => 'string' ],
-                                    'autonym'        => [ 'type' => 'string' ],
-                                    'title'          => [ 'type' => 'string' ],
-                                    'url'            => [ 'type' => 'string' ],
-                                    'app_url'        => [ 'type' => 'string' ],
-                                ],
-                            ],
+                'page_id'             => [ 'type' => 'integer', 'description' => 'Use with wordopedia/save-article.' ],
+                'title'               => [ 'type' => 'string' ],
+                'extract'             => [ 'type' => 'string' ],
+                'summary'             => [ 'type' => 'string' ],
+                'outline'             => self::article_outline_schema(),
+                'sections'            => self::article_sections_schema(),
+                'language'            => [ 'type' => 'string' ],
+                'language_label'      => [ 'type' => 'string' ],
+                'available_languages' => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'language'       => [ 'type' => 'string' ],
+                            'language_label' => [ 'type' => 'string' ],
+                            'autonym'        => [ 'type' => 'string' ],
+                            'title'          => [ 'type' => 'string' ],
+                            'url'            => [ 'type' => 'string' ],
+                            'app_url'        => [ 'type' => 'string' ],
                         ],
-                        'source_url'       => [ 'type' => 'string' ],
-                        'thumbnail_url'    => [ 'type' => 'string' ],
-                        'last_revision_id' => [ 'type' => 'string' ],
-                        'remote_touched'   => [ 'type' => 'string' ],
-                        'app_url'          => [ 'type' => 'string' ],
-                        'saved_article'    => self::saved_article_schema(),
                     ],
                 ],
+                'source_url'       => [ 'type' => 'string' ],
+                'thumbnail_url'    => [ 'type' => 'string' ],
+                'last_revision_id' => [ 'type' => 'string' ],
+                'remote_touched'   => [ 'type' => 'string' ],
+                'app_url'          => [ 'type' => 'string' ],
+                'saved_article'    => self::saved_article_schema(),
             ],
         ];
     }
 
     private static function saved_article_output_schema( bool $include_content = false ): array {
-        return [
-            'type'       => 'object',
-            'properties' => [
-                'article' => self::saved_article_schema( $include_content ),
-            ],
-        ];
+        return self::saved_article_schema( $include_content );
     }
 
     private static function saved_article_schema( bool $include_content = false ): array {
@@ -3241,7 +3567,8 @@ class App extends BaseApp {
         ];
 
         if ( $include_content ) {
-            $properties['html'] = [ 'type' => 'string' ];
+            $properties['outline'] = self::article_outline_schema();
+            $properties['sections'] = self::article_sections_schema();
             $properties['snippets'] = [
                 'type'  => 'array',
                 'items' => self::snippet_schema( true ),
@@ -3251,6 +3578,42 @@ class App extends BaseApp {
         return [
             'type'       => 'object',
             'properties' => $properties,
+        ];
+    }
+
+    private static function article_outline_schema(): array {
+        return [
+            'type'                 => 'object',
+            'description'          => 'Nested article outline keyed by section ID. Child sections are nested under sections.',
+            'additionalProperties' => [
+                'type'       => 'object',
+                'properties' => [
+                    'title'    => [ 'type' => 'string' ],
+                    'sections' => [
+                        'type'                 => 'object',
+                        'additionalProperties' => [ 'type' => 'object' ],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    private static function article_sections_schema(): array {
+        return [
+            'type'                 => 'object',
+            'description'          => 'Article section content keyed by the same section IDs used in outline.',
+            'additionalProperties' => [
+                'type'       => 'object',
+                'properties' => [
+                    'title'      => [ 'type' => 'string' ],
+                    'path'       => [
+                        'type'  => 'array',
+                        'items' => [ 'type' => 'string' ],
+                    ],
+                    'html'       => [ 'type' => 'string' ],
+                    'word_count' => [ 'type' => 'integer' ],
+                ],
+            ],
         ];
     }
 
