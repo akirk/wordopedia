@@ -217,6 +217,21 @@ class AppHelpersTest extends TestCase {
             'File:Old name.svg',
             $this->invokePrivateStatic( 'normalize_media_file_title', [ 'Image:Old_name.svg#Preview' ] )
         );
+
+        $this->assertSame(
+            'File:Vienna, administrative divisions - Nmbrs.svg',
+            $this->invokePrivateStatic( 'normalize_media_file_title', [ 'Datei:Vienna,_administrative_divisions_-_Nmbrs.svg' ] )
+        );
+
+        $this->assertSame(
+            'File:Example logo.svg',
+            $this->invokePrivateStatic( 'normalize_media_file_title', [ 'Fichier:Example_logo.svg' ] )
+        );
+
+        $this->assertSame(
+            'File:Example diagram.png',
+            $this->invokePrivateStatic( 'normalize_media_file_title', [ 'Archivo:Example_diagram.png' ] )
+        );
     }
 
     public function test_media_file_format_includes_svg_urls_and_plain_metadata(): void {
@@ -267,6 +282,34 @@ class AppHelpersTest extends TestCase {
         $this->assertSame( 'Own work', $file['credit'] );
         $this->assertSame( 'Example Artist', $file['attribution'] );
         $this->assertSame( 'Own work', $file['source'] );
+    }
+
+    public function test_media_file_format_accepts_shared_known_missing_pages(): void {
+        $file = $this->invokePrivateStatic( 'format_media_file_page', [
+            [
+                'ns'              => 6,
+                'title'           => 'Datei:Vienna, administrative divisions - Nmbrs.svg',
+                'missing'         => true,
+                'known'           => true,
+                'imagerepository' => 'shared',
+                'imageinfo'       => [
+                    [
+                        'canonicaltitle' => 'Datei:Vienna, administrative divisions - Nmbrs.svg',
+                        'url'            => 'https://upload.wikimedia.org/wikipedia/commons/1/1f/Vienna%2C_administrative_divisions_-_Nmbrs.svg',
+                        'thumburl'       => 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Vienna%2C_administrative_divisions_-_Nmbrs.svg/960px-Vienna%2C_administrative_divisions_-_Nmbrs.svg.png',
+                        'descriptionurl' => 'https://commons.wikimedia.org/wiki/File:Vienna,_administrative_divisions_-_Nmbrs.svg',
+                        'mime'           => 'image/svg+xml',
+                        'mediatype'      => 'DRAWING',
+                    ],
+                ],
+            ],
+        ] );
+
+        $this->assertSame( 'File:Vienna, administrative divisions - Nmbrs.svg', $file['title'] );
+        $this->assertSame( 'Vienna, administrative divisions - Nmbrs.svg', $file['filename'] );
+        $this->assertSame( 'shared', $file['repository'] );
+        $this->assertSame( 'image/svg+xml', $file['mime'] );
+        $this->assertSame( 'https://upload.wikimedia.org/wikipedia/commons/1/1f/Vienna%2C_administrative_divisions_-_Nmbrs.svg', $file['original_url'] );
     }
 
     public function test_media_thumbnail_width_is_clamped(): void {

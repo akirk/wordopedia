@@ -1368,7 +1368,7 @@ class App extends BaseApp {
             }
 
             foreach ( $data['query']['pages'] ?? [] as $page ) {
-                if ( ! is_array( $page ) || isset( $page['missing'] ) ) {
+                if ( ! is_array( $page ) ) {
                     continue;
                 }
 
@@ -1471,11 +1471,21 @@ class App extends BaseApp {
             return '';
         }
 
+        $matches = [];
         if ( preg_match( '/^(file|image)\s*:\s*(.+)$/i', $file_title, $matches ) ) {
             $file_title = trim( $matches[2] );
+        } elseif (
+            preg_match( '/^[^:]{2,40}\s*:\s*(.+)$/u', $file_title, $matches ) &&
+            self::looks_like_media_filename( $matches[1] )
+        ) {
+            $file_title = trim( $matches[1] );
         }
 
         return '' === $file_title ? '' : 'File:' . $file_title;
+    }
+
+    private static function looks_like_media_filename( string $file_title ): bool {
+        return (bool) preg_match( '/\.(?:apng|avif|bmp|gif|heic|heif|ico|jpe?g|jxl|mid|midi|oga|ogg|ogv|opus|pdf|png|stl|svgz?|tiff?|webm|webp|wav)$/i', trim( $file_title ) );
     }
 
     private static function media_filename_from_title( string $file_title ): string {
