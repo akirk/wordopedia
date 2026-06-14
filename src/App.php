@@ -606,8 +606,15 @@ class App extends BaseApp {
                         'type'        => 'integer',
                         'description' => 'WordPress post ID from wordopedia/list-saved-articles or wordopedia/save-article.',
                     ],
+                    'language' => [
+                        'type'        => 'string',
+                        'description' => 'Wikipedia language subdomain for slug lookup, such as de in de-wien.',
+                    ],
+                    'slug'    => [
+                        'type'        => 'string',
+                        'description' => 'Saved article slug. Can be the full saved slug, such as de-wien, or the article slug with language supplied separately, such as wien.',
+                    ],
                 ],
-                'required'             => [ 'post_id' ],
                 'additionalProperties' => false,
             ],
             'output_schema'       => self::saved_article_output_schema( true ),
@@ -833,14 +840,53 @@ class App extends BaseApp {
 
     public function ability_get_saved_article( $input ) {
         $input = is_array( $input ) ? $input : [];
-        $post_id = isset( $input['post_id'] ) ? absint( $input['post_id'] ) : 0;
-        $post = $post_id ? get_post( $post_id ) : null;
+        $post = self::resolve_saved_article_lookup( $input );
 
         if ( ! $post || $post->post_type !== self::POST_TYPE ) {
             return new \WP_Error( 'wordopedia_article_not_found', __( 'Saved Wikipedia article not found.', 'wordopedia' ) );
         }
 
         return self::format_ability_article( self::format_saved_article( $post, true ) );
+    }
+
+    private static function resolve_saved_article_lookup( array $input ) {
+        $post_id = isset( $input['post_id'] ) ? absint( $input['post_id'] ) : 0;
+        if ( $post_id ) {
+            return get_post( $post_id );
+        }
+
+        $slug = isset( $input['slug'] ) && is_scalar( $input['slug'] ) ? sanitize_title( (string) $input['slug'] ) : '';
+        if ( '' === $slug ) {
+            return null;
+        }
+
+        $language = isset( $input['language'] ) && is_scalar( $input['language'] ) ? sanitize_text_field( (string) $input['language'] ) : '';
+        if ( '' !== $language ) {
+            $language = self::normalize_language( $language );
+            if ( is_wp_error( $language ) ) {
+                return null;
+            }
+        }
+
+        $candidate_slugs = [ $slug ];
+        if ( '' !== $language && 0 !== strpos( $slug, $language . '-' ) ) {
+            array_unshift( $candidate_slugs, sanitize_title( $language . '-' . $slug ) );
+        }
+
+        foreach ( array_unique( $candidate_slugs ) as $candidate_slug ) {
+            $posts = get_posts( [
+                'name'           => $candidate_slug,
+                'post_type'      => self::POST_TYPE,
+                'post_status'    => [ 'publish', 'draft', 'private' ],
+                'posts_per_page' => 1,
+            ] );
+
+            if ( $posts ) {
+                return $posts[0];
+            }
+        }
+
+        return null;
     }
 
     public function ability_refetch_saved_article( $input ) {

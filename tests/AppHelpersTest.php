@@ -7,6 +7,7 @@ class AppHelpersTest extends TestCase {
     protected function tearDown(): void {
         unset( $GLOBALS['wordopedia_app_test_user_locale'] );
         unset( $GLOBALS['wordopedia_app_test_home_url'] );
+        unset( $GLOBALS['wordopedia_app_test_posts'] );
     }
 
     /** @dataProvider localeLanguages */
@@ -349,6 +350,48 @@ class AppHelpersTest extends TestCase {
         $this->assertArrayHasKey( 'html', $snippet_properties );
         $this->assertArrayHasKey( 'text', $snippet_properties );
         $this->assertArrayNotHasKey( 'content', $snippet_properties );
+    }
+
+    public function test_saved_article_lookup_schema_accepts_slug_with_language(): void {
+        $app = $this->newAppWithoutConstructor();
+        $registered = [];
+        $GLOBALS['wordopedia_app_test_register_ability'] = function( string $name, array $args ) use ( &$registered ) {
+            $registered[ $name ] = $args;
+        };
+
+        try {
+            $app->register_abilities();
+        } finally {
+            unset( $GLOBALS['wordopedia_app_test_register_ability'] );
+        }
+
+        $schema = $registered['wordopedia/get-saved-article']['input_schema'];
+
+        $this->assertArrayHasKey( 'post_id', $schema['properties'] );
+        $this->assertArrayHasKey( 'language', $schema['properties'] );
+        $this->assertArrayHasKey( 'slug', $schema['properties'] );
+        $this->assertArrayNotHasKey( 'required', $schema );
+    }
+
+    public function test_saved_article_lookup_resolves_language_and_slug(): void {
+        $post = new WP_Post( [
+            'ID'          => 3403586,
+            'post_type'   => App::POST_TYPE,
+            'post_status' => 'publish',
+            'post_name'   => 'de-wien',
+        ] );
+        $GLOBALS['wordopedia_app_test_posts'] = [
+            3403586 => $post,
+        ];
+
+        $resolved = $this->invokePrivateStatic( 'resolve_saved_article_lookup', [
+            [
+                'language' => 'de',
+                'slug'     => 'wien',
+            ],
+        ] );
+
+        $this->assertSame( $post, $resolved );
     }
 
     public function test_article_media_input_schema_supports_svg_filtering(): void {
