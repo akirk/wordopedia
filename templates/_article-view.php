@@ -113,10 +113,12 @@ $render_toc_items = static function( array $items ) use ( &$render_toc_items ): 
 </div>
 
 <?php if ( $toc_items ) : ?>
-    <nav class="wiki-article-toc" aria-labelledby="wiki-article-toc-title">
-        <h2 id="wiki-article-toc-title"><?php esc_html_e( 'Contents', 'wordopedia' ); ?></h2>
-        <?php $render_toc_items( $toc_items ); ?>
-    </nav>
+    <details class="wiki-article-toc">
+        <summary><?php esc_html_e( 'Contents', 'wordopedia' ); ?></summary>
+        <nav aria-label="<?php esc_attr_e( 'Article contents', 'wordopedia' ); ?>">
+            <?php $render_toc_items( $toc_items ); ?>
+        </nav>
+    </details>
 <?php endif; ?>
 
 <?php if ( $is_saved_view ) : ?>
