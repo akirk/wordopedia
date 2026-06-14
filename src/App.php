@@ -2521,6 +2521,7 @@ class App extends BaseApp {
             $article['content'] = $post->post_content;
             $article['html']    = $post->post_content;
             $article['tocdata'] = is_array( $tocdata ) ? $tocdata : [];
+            $article['toc']     = self::article_toc_items_from_tocdata( $article['tocdata'] );
             $article['snippets'] = self::get_saved_article_snippets( $post_id, true );
         }
 
@@ -3596,6 +3597,61 @@ class App extends BaseApp {
                 ],
             ],
         ];
+    }
+
+    private static function article_toc_items_from_tocdata( array $tocdata ): array {
+        $toc_sections = isset( $tocdata['sections'] ) && is_array( $tocdata['sections'] ) ? $tocdata['sections'] : [];
+        if ( ! $toc_sections ) {
+            return [];
+        }
+
+        $items = [];
+        $stack = [];
+
+        foreach ( $toc_sections as $toc_section ) {
+            if ( ! is_array( $toc_section ) ) {
+                continue;
+            }
+
+            $title = isset( $toc_section['line'] ) && is_scalar( $toc_section['line'] ) ? trim( self::plain_text( (string) $toc_section['line'] ) ) : '';
+            $anchor = isset( $toc_section['anchor'] ) && is_scalar( $toc_section['anchor'] ) ? trim( (string) $toc_section['anchor'] ) : '';
+            if ( '' === $title || '' === $anchor ) {
+                continue;
+            }
+
+            $level = isset( $toc_section['tocLevel'] ) ? absint( $toc_section['tocLevel'] ) : 0;
+            if ( ! $level && isset( $toc_section['hLevel'] ) ) {
+                $level = max( 1, absint( $toc_section['hLevel'] ) - 1 );
+            }
+            $level = max( 1, $level );
+
+            $item = [
+                'title'    => $title,
+                'anchor'   => $anchor,
+                'children' => [],
+            ];
+
+            foreach ( array_keys( $stack ) as $stack_level ) {
+                if ( $stack_level >= $level ) {
+                    unset( $stack[ $stack_level ] );
+                }
+            }
+
+            if ( $stack ) {
+                $parent_level = max( array_keys( $stack ) );
+                $parent =& $stack[ $parent_level ];
+                $parent['children'][] = $item;
+                $last_index = count( $parent['children'] ) - 1;
+                $stack[ $level ] =& $parent['children'][ $last_index ];
+                unset( $parent );
+            } else {
+                $items[] = $item;
+                $last_index = count( $items ) - 1;
+                $stack[ $level ] =& $items[ $last_index ];
+            }
+        }
+
+        return $items;
     }
 
     private static function article_sections_schema(): array {

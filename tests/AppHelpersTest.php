@@ -266,6 +266,55 @@ class AppHelpersTest extends TestCase {
         $this->assertSame( '<ul><li>Reference item</li></ul>', $sectioned['sections']['references']['html'] );
     }
 
+    public function test_article_toc_items_use_tocdata_titles_and_anchors(): void {
+        $toc = $this->invokePrivateStatic( 'article_toc_items_from_tocdata', [
+            [
+                'sections' => [
+                    [
+                        'tocLevel' => 1,
+                        'hLevel'   => 2,
+                        'line'     => 'Bevölkerung',
+                        'anchor'   => 'Bevölkerung',
+                    ],
+                    [
+                        'tocLevel' => 2,
+                        'hLevel'   => 3,
+                        'line'     => 'Römisch-Katholische Kirche',
+                        'anchor'   => 'Römisch-Katholische_Kirche',
+                    ],
+                    [
+                        'tocLevel' => 1,
+                        'hLevel'   => 2,
+                        'line'     => 'Wirtschaft',
+                        'anchor'   => 'Wirtschaft',
+                    ],
+                ],
+            ],
+        ] );
+
+        $this->assertSame(
+            [
+                [
+                    'title'    => 'Bevölkerung',
+                    'anchor'   => 'Bevölkerung',
+                    'children' => [
+                        [
+                            'title'    => 'Römisch-Katholische Kirche',
+                            'anchor'   => 'Römisch-Katholische_Kirche',
+                            'children' => [],
+                        ],
+                    ],
+                ],
+                [
+                    'title'    => 'Wirtschaft',
+                    'anchor'   => 'Wirtschaft',
+                    'children' => [],
+                ],
+            ],
+            $toc
+        );
+    }
+
     public function test_ability_output_schemas_use_sectioned_article_content(): void {
         $detail_schema = $this->invokePrivateStatic( 'article_detail_output_schema', [] );
         $detail_properties = $detail_schema['properties'];

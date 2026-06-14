@@ -206,6 +206,13 @@ input:focus, select:focus, textarea:focus, button:focus, a:focus { outline: 2px 
 .wiki-selection-snippet { position: fixed; z-index: 60; top: 1rem; left: 50%; width: auto; box-sizing: border-box; padding: 0.35rem; border: 1px solid var(--wiki-line); background: var(--wiki-card); box-shadow: 0 0.3rem 0.8rem rgba(0, 0, 0, 0.16); transform: translateX(-50%); }
 .wiki-selection-snippet[hidden] { display: none; }
 .wiki-selection-snippet-actions { display: flex; gap: 0.35rem; justify-content: flex-end; }
+.wiki-article-toc { max-width: 34rem; margin: 0 0 1.1rem; padding: 0.7rem 0.85rem; border: 1px solid var(--wiki-line); background: var(--wiki-card-alt); font-size: 0.9rem; }
+.wiki-article-toc h2 { margin: 0 0 0.4rem; font-family: var(--wiki-sans); font-size: 0.95rem; font-weight: 700; }
+.wiki-article-toc ol { margin: 0.2rem 0 0 1.15rem; padding: 0; }
+.wiki-article-toc > ol { columns: 2; column-gap: 2rem; }
+.wiki-article-toc li { break-inside: avoid; margin: 0.12rem 0; padding-left: 0.1rem; }
+.wiki-article-toc a { color: var(--wiki-primary); text-decoration: none; }
+.wiki-article-toc a:hover, .wiki-article-toc a:focus { text-decoration: underline; }
 .wiki-article { background: transparent; border: 0; border-radius: 0; padding: 0; overflow-wrap: anywhere; font-size: 0.95rem; }
 .wiki-article p { margin: 0.5rem 0; }
 .wiki-article img { max-width: 100%; height: auto; }
@@ -235,6 +242,7 @@ input:focus, select:focus, textarea:focus, button:focus, a:focus { outline: 2px 
     .wiki-language-switcher select { flex: 1; max-width: none; }
     .wiki-article .infobox { float: none; width: 100%; max-width: 100%; margin: 0 0 1rem; }
     .wiki-article table { display: block; overflow-x: auto; }
+    .wiki-article-toc > ol { columns: 1; }
 }
 @media (max-width: 520px) {
     .wiki-topbar { display: block; }

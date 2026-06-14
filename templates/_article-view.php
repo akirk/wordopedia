@@ -9,6 +9,7 @@ $article = isset( $article ) && is_array( $article ) ? $article : [];
 $article_html = isset( $article['html'] ) ? $article['html'] : ( $article['content'] ?? '' );
 $is_saved_view = ! empty( $is_saved_view );
 $snippets = $is_saved_view && ! empty( $article['snippets'] ) && is_array( $article['snippets'] ) ? $article['snippets'] : [];
+$toc_items = $is_saved_view && ! empty( $article['toc'] ) && is_array( $article['toc'] ) ? $article['toc'] : [];
 $can_save_snippets = current_user_can( 'edit_posts' ) && ( ! empty( $article['post_id'] ) || ! empty( $article['page_id'] ) );
 $snippet_count = count( $snippets );
 $article_version_statuses = [];
@@ -53,6 +54,30 @@ if ( $saved_status_article ) {
         'can_refresh' => $is_saved_view && current_user_can( 'edit_posts' ) && ! empty( $article['post_id'] ),
     ];
 }
+
+$render_toc_items = static function( array $items ) use ( &$render_toc_items ): void {
+    if ( ! $items ) {
+        return;
+    }
+    ?>
+    <ol>
+        <?php foreach ( $items as $item ) : ?>
+            <?php
+            $title = isset( $item['title'] ) ? (string) $item['title'] : '';
+            $anchor = isset( $item['anchor'] ) ? (string) $item['anchor'] : '';
+            $children = ! empty( $item['children'] ) && is_array( $item['children'] ) ? $item['children'] : [];
+            if ( '' === $title || '' === $anchor ) {
+                continue;
+            }
+            ?>
+            <li>
+                <a href="<?php echo esc_url( '#' . rawurlencode( $anchor ) ); ?>"><?php echo esc_html( $title ); ?></a>
+                <?php $render_toc_items( $children ); ?>
+            </li>
+        <?php endforeach; ?>
+    </ol>
+    <?php
+};
 ?>
 <div class="wiki-page-head wiki-article-head">
     <div>
@@ -86,6 +111,13 @@ if ( $saved_status_article ) {
         </div>
     </div>
 </div>
+
+<?php if ( $toc_items ) : ?>
+    <nav class="wiki-article-toc" aria-labelledby="wiki-article-toc-title">
+        <h2 id="wiki-article-toc-title"><?php esc_html_e( 'Contents', 'wordopedia' ); ?></h2>
+        <?php $render_toc_items( $toc_items ); ?>
+    </nav>
+<?php endif; ?>
 
 <?php if ( $is_saved_view ) : ?>
     <section class="wiki-snippets" aria-labelledby="wiki-snippets-title" data-wiki-snippets data-snippet-count="<?php echo esc_attr( $snippet_count ); ?>" data-count-singular="<?php esc_attr_e( 'snippet', 'wordopedia' ); ?>" data-count-plural="<?php esc_attr_e( 'snippets', 'wordopedia' ); ?>" <?php echo $snippet_count ? '' : 'hidden'; ?>>
