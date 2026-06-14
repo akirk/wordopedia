@@ -20,6 +20,21 @@ if ( ! class_exists( 'WP_Error' ) ) {
     }
 }
 
+if ( ! class_exists( 'WP_Post' ) ) {
+    class WP_Post {
+        public $ID;
+        public $post_type;
+        public $post_status;
+        public $post_name;
+
+        public function __construct( array $data = [] ) {
+            foreach ( $data as $key => $value ) {
+                $this->$key = $value;
+            }
+        }
+    }
+}
+
 if ( ! function_exists( '__' ) ) {
     function __( $text, $domain = 'default' ) {
         return $text;
@@ -29,6 +44,14 @@ if ( ! function_exists( '__' ) ) {
 if ( ! function_exists( 'apply_filters' ) ) {
     function apply_filters( $hook_name, $value ) {
         return $value;
+    }
+}
+
+if ( ! function_exists( 'wp_register_ability' ) ) {
+    function wp_register_ability( $name, $args ) {
+        if ( isset( $GLOBALS['wordopedia_app_test_register_ability'] ) && is_callable( $GLOBALS['wordopedia_app_test_register_ability'] ) ) {
+            $GLOBALS['wordopedia_app_test_register_ability']( $name, $args );
+        }
     }
 }
 
@@ -163,6 +186,34 @@ if ( ! function_exists( 'wp_parse_url' ) ) {
 if ( ! function_exists( 'is_wp_error' ) ) {
     function is_wp_error( $thing ) {
         return $thing instanceof WP_Error;
+    }
+}
+
+if ( ! function_exists( 'get_post' ) ) {
+    function get_post( $post_id = 0 ) {
+        return $GLOBALS['wordopedia_app_test_posts'][ (int) $post_id ] ?? null;
+    }
+}
+
+if ( ! function_exists( 'get_posts' ) ) {
+    function get_posts( $args = [] ) {
+        $posts = array_values( $GLOBALS['wordopedia_app_test_posts'] ?? [] );
+
+        if ( isset( $args['post_type'] ) ) {
+            $post_type = $args['post_type'];
+            $posts = array_values( array_filter( $posts, function( $post ) use ( $post_type ) {
+                return $post instanceof WP_Post && $post->post_type === $post_type;
+            } ) );
+        }
+
+        if ( isset( $args['name'] ) ) {
+            $name = (string) $args['name'];
+            $posts = array_values( array_filter( $posts, function( $post ) use ( $name ) {
+                return $post instanceof WP_Post && $post->post_name === $name;
+            } ) );
+        }
+
+        return array_slice( $posts, 0, isset( $args['posts_per_page'] ) ? absint( $args['posts_per_page'] ) : count( $posts ) );
     }
 }
 

@@ -7,6 +7,7 @@ class AppHelpersTest extends TestCase {
     protected function tearDown(): void {
         unset( $GLOBALS['wordopedia_app_test_user_locale'] );
         unset( $GLOBALS['wordopedia_app_test_home_url'] );
+        unset( $GLOBALS['wordopedia_app_test_posts'] );
     }
 
     /** @dataProvider localeLanguages */
@@ -142,10 +143,32 @@ class AppHelpersTest extends TestCase {
         $this->assertStringContainsString( 'save the best result to Wordopedia', $tips['wordopedia'][0] );
     }
 
-    public function test_ability_article_payload_uses_html_without_raw_content(): void {
+    public function test_ability_article_payload_uses_section_html_without_raw_content(): void {
         $article = [
             'title'    => 'Example',
-            'content'  => '<p>Article body</p>',
+            'content'  => '<div class="toc"><ul><li>Ignored TOC</li></ul></div><p>Lead body</p><h2 id="History">DOM History</h2><p>History body</p><h3><span id="Early_life"></span>DOM Early life</h3><p>Early body</p><h2 id="History_2">DOM History duplicate</h2><p>Second history body</p>',
+            'tocdata'  => [
+                'sections' => [
+                    [
+                        'tocLevel' => 1,
+                        'hLevel'   => 2,
+                        'line'     => 'Official History',
+                        'anchor'   => 'History',
+                    ],
+                    [
+                        'tocLevel' => 2,
+                        'hLevel'   => 3,
+                        'line'     => 'Official Early life',
+                        'anchor'   => 'Early_life',
+                    ],
+                    [
+                        'tocLevel' => 1,
+                        'hLevel'   => 2,
+                        'line'     => 'Official History duplicate',
+                        'anchor'   => 'History_2',
+                    ],
+                ],
+            ],
             'snippets' => [
                 [
                     'post_id' => 123,
@@ -159,18 +182,157 @@ class AppHelpersTest extends TestCase {
         $formatted = $this->invokePrivateStatic( 'format_ability_article', [ $article ] );
 
         $this->assertArrayNotHasKey( 'content', $formatted );
-        $this->assertSame( '<p>Article body</p>', $formatted['html'] );
+        $this->assertArrayNotHasKey( 'html', $formatted );
+        $this->assertArrayHasKey( 'outline', $formatted );
+        $this->assertArrayHasKey( 'sections', $formatted );
+        $this->assertSame(
+            [
+                'lead'      => [
+                    'title' => 'Lead',
+                ],
+                'history'   => [
+                    'title'    => 'Official History',
+                    'sections' => [
+                        'early-life' => [
+                            'title' => 'Official Early life',
+                        ],
+                    ],
+                ],
+                'history-2' => [
+                    'title' => 'Official History duplicate',
+                ],
+            ],
+            $formatted['outline']
+        );
+        $this->assertArrayNotHasKey( 'toc', $formatted['outline'] );
+        $this->assertSame( '<p>Lead body</p>', $formatted['sections']['lead']['html'] );
+        $this->assertSame( [ 'Official History', 'Official Early life' ], $formatted['sections']['early-life']['path'] );
+        $this->assertSame( '<p>Early body</p>', $formatted['sections']['early-life']['html'] );
+        $this->assertSame( '<p>Second history body</p>', $formatted['sections']['history-2']['html'] );
         $this->assertArrayNotHasKey( 'content', $formatted['snippets'][0] );
         $this->assertSame( '<p>Snippet body</p>', $formatted['snippets'][0]['html'] );
         $this->assertSame( 'Snippet body', $formatted['snippets'][0]['text'] );
     }
 
-    public function test_ability_output_schemas_do_not_include_raw_content_duplicates(): void {
+    public function test_article_html_sections_extract_toc_from_wikipedia_heading_structure(): void {
+        $html = '<div class="mw-parser-output"><nav id="toc" class="vector-toc"><ul><li><a href="#Overview">Overview</a></li><li><a href="#Details">Details</a></li></ul></nav><p>Lead body</p><div class="mw-heading mw-heading2"><h2 id="Overview">DOM Overview</h2></div><p>Overview body</p><div class="mw-heading mw-heading3"><h3><span id="Details"></span>DOM Details</h3></div><p>Details body</p><div class="mw-heading mw-heading2"><h2 id="References">DOM References</h2></div><ul><li>Reference item</li></ul></div>';
+        $tocdata = [
+            'sections' => [
+                [
+                    'tocLevel' => 1,
+                    'hLevel'   => 2,
+                    'line'     => 'Official Overview',
+                    'anchor'   => 'Overview',
+                ],
+                [
+                    'tocLevel' => 2,
+                    'hLevel'   => 3,
+                    'line'     => 'Official Details',
+                    'anchor'   => 'Details',
+                ],
+                [
+                    'tocLevel' => 1,
+                    'hLevel'   => 2,
+                    'line'     => 'Official References',
+                    'anchor'   => 'References',
+                ],
+            ],
+        ];
+
+        $sectioned = $this->invokePrivateStatic( 'section_article_html', [ $html, $tocdata ] );
+
+        $this->assertSame(
+            [
+                'lead'       => [
+                    'title' => 'Lead',
+                ],
+                'overview'   => [
+                    'title'    => 'Official Overview',
+                    'sections' => [
+                        'details' => [
+                            'title' => 'Official Details',
+                        ],
+                    ],
+                ],
+                'references' => [
+                    'title' => 'Official References',
+                ],
+            ],
+            $sectioned['outline']
+        );
+        $this->assertArrayNotHasKey( 'toc', $sectioned['outline'] );
+        $this->assertSame( '<p>Lead body</p>', $sectioned['sections']['lead']['html'] );
+        $this->assertSame( '<p>Overview body</p>', $sectioned['sections']['overview']['html'] );
+        $this->assertSame( '<p>Details body</p>', $sectioned['sections']['details']['html'] );
+        $this->assertSame( '<ul><li>Reference item</li></ul>', $sectioned['sections']['references']['html'] );
+    }
+
+    public function test_article_toc_items_use_tocdata_titles_and_anchors(): void {
+        $toc = $this->invokePrivateStatic( 'article_toc_items_from_tocdata', [
+            [
+                'sections' => [
+                    [
+                        'tocLevel' => 1,
+                        'hLevel'   => 2,
+                        'line'     => 'Bevölkerung',
+                        'anchor'   => 'Bevölkerung',
+                    ],
+                    [
+                        'tocLevel' => 2,
+                        'hLevel'   => 3,
+                        'line'     => 'Römisch-Katholische Kirche',
+                        'anchor'   => 'Römisch-Katholische_Kirche',
+                    ],
+                    [
+                        'tocLevel' => 1,
+                        'hLevel'   => 2,
+                        'line'     => 'Wirtschaft',
+                        'anchor'   => 'Wirtschaft',
+                    ],
+                ],
+            ],
+        ] );
+
+        $this->assertSame(
+            [
+                [
+                    'title'    => 'Bevölkerung',
+                    'anchor'   => 'Bevölkerung',
+                    'children' => [
+                        [
+                            'title'    => 'Römisch-Katholische Kirche',
+                            'anchor'   => 'Römisch-Katholische_Kirche',
+                            'children' => [],
+                        ],
+                    ],
+                ],
+                [
+                    'title'    => 'Wirtschaft',
+                    'anchor'   => 'Wirtschaft',
+                    'children' => [],
+                ],
+            ],
+            $toc
+        );
+    }
+
+    public function test_ability_output_schemas_use_sectioned_article_content(): void {
+        $detail_schema = $this->invokePrivateStatic( 'article_detail_output_schema', [] );
+        $detail_properties = $detail_schema['properties'];
+
+        $this->assertArrayHasKey( 'title', $detail_properties );
+        $this->assertArrayHasKey( 'outline', $detail_properties );
+        $this->assertArrayHasKey( 'sections', $detail_properties );
+        $this->assertArrayNotHasKey( 'article', $detail_properties );
+        $this->assertArrayNotHasKey( 'html', $detail_properties );
+
         $article_schema = $this->invokePrivateStatic( 'saved_article_schema', [ true ] );
         $article_properties = $article_schema['properties'];
 
-        $this->assertArrayHasKey( 'html', $article_properties );
+        $this->assertArrayHasKey( 'outline', $article_properties );
+        $this->assertArrayHasKey( 'sections', $article_properties );
         $this->assertArrayHasKey( 'snippets', $article_properties );
+        $this->assertArrayNotHasKey( 'html', $article_properties );
         $this->assertArrayNotHasKey( 'content', $article_properties );
 
         $media_schema = $this->invokePrivateStatic( 'media_file_schema', [] );
@@ -188,6 +350,48 @@ class AppHelpersTest extends TestCase {
         $this->assertArrayHasKey( 'html', $snippet_properties );
         $this->assertArrayHasKey( 'text', $snippet_properties );
         $this->assertArrayNotHasKey( 'content', $snippet_properties );
+    }
+
+    public function test_saved_article_lookup_schema_accepts_slug_with_language(): void {
+        $app = $this->newAppWithoutConstructor();
+        $registered = [];
+        $GLOBALS['wordopedia_app_test_register_ability'] = function( string $name, array $args ) use ( &$registered ) {
+            $registered[ $name ] = $args;
+        };
+
+        try {
+            $app->register_abilities();
+        } finally {
+            unset( $GLOBALS['wordopedia_app_test_register_ability'] );
+        }
+
+        $schema = $registered['wordopedia/get-saved-article']['input_schema'];
+
+        $this->assertArrayHasKey( 'post_id', $schema['properties'] );
+        $this->assertArrayHasKey( 'language', $schema['properties'] );
+        $this->assertArrayHasKey( 'slug', $schema['properties'] );
+        $this->assertArrayNotHasKey( 'required', $schema );
+    }
+
+    public function test_saved_article_lookup_resolves_language_and_slug(): void {
+        $post = new WP_Post( [
+            'ID'          => 3403586,
+            'post_type'   => App::POST_TYPE,
+            'post_status' => 'publish',
+            'post_name'   => 'de-wien',
+        ] );
+        $GLOBALS['wordopedia_app_test_posts'] = [
+            3403586 => $post,
+        ];
+
+        $resolved = $this->invokePrivateStatic( 'resolve_saved_article_lookup', [
+            [
+                'language' => 'de',
+                'slug'     => 'wien',
+            ],
+        ] );
+
+        $this->assertSame( $post, $resolved );
     }
 
     public function test_article_media_input_schema_supports_svg_filtering(): void {
