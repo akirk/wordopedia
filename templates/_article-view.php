@@ -81,7 +81,7 @@ $render_toc_items = static function( array $items ) use ( &$render_toc_items ): 
 ?>
 <div class="wiki-page-head wiki-article-head">
     <div>
-        <h1><?php echo esc_html( $article['title'] ?? '' ); ?></h1>
+        <h1 id="wordopedia-article-title"><?php echo esc_html( $article['title'] ?? '' ); ?></h1>
         <div class="wiki-subtitle">
             <?php echo esc_html( ( $article['language_label'] ?? '' ) . ' (' . ( $article['language'] ?? '' ) . ')' ); ?>
             <?php foreach ( $article_version_statuses as $version_status ) : ?>
@@ -183,7 +183,7 @@ $render_toc_items = static function( array $items ) use ( &$render_toc_items ): 
 <?php endif; ?>
 
 <?php if ( $can_save_snippets ) : ?>
-    <form class="wiki-selection-snippet" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-wiki-snippet-form data-wiki-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>" data-saving-text="<?php esc_attr_e( 'Saving...', 'wordopedia' ); ?>" data-saved-text="<?php esc_attr_e( 'Snippet saved.', 'wordopedia' ); ?>" data-error-text="<?php esc_attr_e( 'Could not save snippet.', 'wordopedia' ); ?>" hidden>
+    <form class="wiki-selection-snippet" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" aria-label="<?php esc_attr_e( 'Save selected snippet', 'wordopedia' ); ?>" data-wiki-snippet-form data-wiki-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>" data-saving-text="<?php esc_attr_e( 'Saving...', 'wordopedia' ); ?>" data-saved-text="<?php esc_attr_e( 'Snippet saved.', 'wordopedia' ); ?>" data-error-text="<?php esc_attr_e( 'Could not save snippet.', 'wordopedia' ); ?>" hidden>
         <?php wp_nonce_field( App::NONCE_SAVE_SNIPPET ); ?>
         <input type="hidden" name="action" value="wordopedia_save_snippet">
         <input type="hidden" name="text" value="" data-wiki-snippet-text>
@@ -202,6 +202,6 @@ $render_toc_items = static function( array $items ) use ( &$render_toc_items ): 
     </form>
 <?php endif; ?>
 
-<article class="wiki-article" data-wiki-article-snippets>
+<article id="wordopedia-article" class="wiki-article" aria-labelledby="wordopedia-article-title" data-wiki-article-snippets data-ai-assistant-important>
     <?php echo wp_kses( $article_html, App::article_allowed_html() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- article HTML is sanitized on output. ?>
 </article>

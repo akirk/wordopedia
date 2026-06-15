@@ -33,7 +33,7 @@ include __DIR__ . '/_header.php';
 ?>
 <div class="wiki-page-head">
     <div>
-        <h1><?php echo esc_html( $page_title ); ?></h1>
+        <h1 id="wordopedia-saved-articles-title"><?php echo esc_html( $page_title ); ?></h1>
     </div>
 </div>
 
@@ -56,7 +56,7 @@ $wiki_saved_search_action = $current_list ? App::get_list_url( $current_list ) :
 include __DIR__ . '/_saved-search-form.php';
 ?>
 
-<section class="wiki-home-saved" id="wiki-saved-list">
+<section class="wiki-home-saved" id="wiki-saved-list" aria-labelledby="wordopedia-saved-articles-title" data-ai-assistant-important>
     <?php
     $wiki_saved_alpha_empty_message = __( 'No saved articles found.', 'wordopedia' );
     include __DIR__ . '/_saved-alpha-list.php';

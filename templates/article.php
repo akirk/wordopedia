@@ -57,7 +57,9 @@ if ( $article ) {
 }
 ?>
 
-<section class="wiki-search-results" id="wiki-search-results" data-wiki-quicksearch-results aria-live="polite"></section>
+<section class="wiki-search-results" id="wiki-search-results" aria-labelledby="wiki-search-results-title" data-wiki-quicksearch-results aria-live="polite">
+    <h2 id="wiki-search-results-title" class="screen-reader-text"><?php esc_html_e( 'Search results', 'wordopedia' ); ?></h2>
+</section>
 
 <?php if ( isset( $_GET['wordopedia_error'] ) ) : ?>
     <div class="wiki-notice error"><?php echo esc_html( sanitize_text_field( wp_unslash( $_GET['wordopedia_error'] ) ) ); ?></div>

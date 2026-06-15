@@ -36,6 +36,7 @@
 }
 html { overflow-y: scroll; scrollbar-gutter: stable; }
 body { margin: 0; background: var(--wiki-bg); color: var(--wiki-fg); font-family: var(--wiki-sans); font-size: 15px; line-height: 1.6; }
+.screen-reader-text { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0, 0, 0, 0); word-wrap: normal !important; }
 a { color: var(--wiki-primary); text-decoration: none; }
 a:hover, a:focus { color: var(--wiki-primary-hover); text-decoration: underline; }
 .wiki-shell { width: 100%; max-width: 1180px; box-sizing: border-box; margin: 0 auto; padding: 0.75rem 1.35rem 4rem; }

@@ -1053,8 +1053,18 @@
             return notice;
         }
 
-        function setNotice(message, className) {
+        function resetResultsRegion() {
+            var titleId = target.getAttribute('aria-labelledby') || '';
+            var title = titleId ? document.getElementById(titleId) : null;
+
             target.textContent = '';
+            if (title) {
+                target.appendChild(title);
+            }
+        }
+
+        function setNotice(message, className) {
+            resetResultsRegion();
             target.appendChild(createNotice(message, className));
         }
 
@@ -1108,7 +1118,7 @@
         function renderResults(query, items) {
             var list = document.createElement('ul');
 
-            target.textContent = '';
+            resetResultsRegion();
 
             if (!items.length) {
                 target.appendChild(createNotice(dataText('data-no-results-text', 'No Wikipedia results found.')));
@@ -1200,7 +1210,7 @@
                 if (controller) {
                     controller.abort();
                 }
-                target.textContent = '';
+                resetResultsRegion();
                 updateAddress('');
                 return;
             }

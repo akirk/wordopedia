@@ -150,7 +150,7 @@ trait Snippets {
         ];
     }
 
-    private static function format_ability_snippet( array $snippet ): array {
+    public static function format_ability_snippet( array $snippet ): array {
         if ( ! array_key_exists( 'html', $snippet ) && array_key_exists( 'content', $snippet ) ) {
             $snippet['html'] = self::snippet_display_html( (string) $snippet['content'] );
         }
@@ -978,7 +978,7 @@ trait Snippets {
         return implode( ' ', array_slice( $parts, 0, $words ) ) . '...';
     }
 
-    private static function snippet_save_input_schema(): array {
+    public static function snippet_save_input_schema(): array {
         return [
             'type'                 => 'object',
             'properties'           => [
@@ -1020,7 +1020,7 @@ trait Snippets {
         ];
     }
 
-    private static function snippet_output_schema( bool $include_content = true ): array {
+    public static function snippet_output_schema( bool $include_content = true ): array {
         return [
             'type'       => 'object',
             'properties' => [
@@ -1029,7 +1029,7 @@ trait Snippets {
         ];
     }
 
-    private static function snippet_search_output_schema(): array {
+    public static function snippet_search_output_schema(): array {
         return [
             'type'       => 'object',
             'properties' => [
@@ -1041,7 +1041,7 @@ trait Snippets {
         ];
     }
 
-    private static function snippet_schema( bool $include_content = true ): array {
+    public static function snippet_schema( bool $include_content = true ): array {
         $properties = [
             'post_id'               => [ 'type' => 'integer', 'description' => 'Use with wordopedia/get-snippet or wordopedia/save-snippet.' ],
             'id'                    => [ 'type' => 'integer' ],
