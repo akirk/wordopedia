@@ -17,7 +17,7 @@ include __DIR__ . '/_header.php';
 ?>
 <div class="wiki-page-head">
     <div>
-        <h1><?php esc_html_e( 'Settings', 'wordopedia' ); ?></h1>
+        <h1 id="wordopedia-settings-title"><?php esc_html_e( 'Settings', 'wordopedia' ); ?></h1>
         <p class="wiki-subtitle"><?php esc_html_e( 'Choose the Wikipedia languages you search most often.', 'wordopedia' ); ?></p>
     </div>
 </div>
@@ -26,7 +26,7 @@ include __DIR__ . '/_header.php';
     <div class="wiki-notice success"><?php esc_html_e( 'Settings saved.', 'wordopedia' ); ?></div>
 <?php endif; ?>
 
-<form class="wiki-settings-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+<form class="wiki-settings-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" aria-labelledby="wordopedia-settings-title" data-ai-assistant-important>
     <?php wp_nonce_field( App::NONCE_SAVE_SETTINGS ); ?>
     <input type="hidden" name="action" value="wordopedia_save_settings">
 
@@ -39,6 +39,7 @@ include __DIR__ . '/_header.php';
             data-move-up-text="<?php esc_attr_e( 'Move up', 'wordopedia' ); ?>"
             data-move-down-text="<?php esc_attr_e( 'Move down', 'wordopedia' ); ?>"
             data-remove-text="<?php esc_attr_e( 'Remove', 'wordopedia' ); ?>"
+            aria-label="<?php esc_attr_e( 'Selected language versions', 'wordopedia' ); ?>"
         >
             <?php foreach ( $selected_language_labels as $code => $label ) : ?>
                 <li data-wiki-language-item data-language-code="<?php echo esc_attr( $code ); ?>">
@@ -52,7 +53,8 @@ include __DIR__ . '/_header.php';
         </ol>
         <div class="wiki-language-picker" data-wiki-language-picker data-language-list="wiki-language-order" data-loading-text="<?php esc_attr_e( 'Loading Wikipedia language versions...', 'wordopedia' ); ?>" data-empty-text="<?php esc_attr_e( 'No Wikipedia language versions found.', 'wordopedia' ); ?>">
             <label class="wiki-search-field">
-                <input type="search" autocomplete="off" placeholder="<?php esc_attr_e( 'Search Wikipedia language versions', 'wordopedia' ); ?>" aria-label="<?php esc_attr_e( 'Search Wikipedia language versions', 'wordopedia' ); ?>" data-wiki-language-search>
+                <span><?php esc_html_e( 'Add language version', 'wordopedia' ); ?></span>
+                <input type="search" autocomplete="off" placeholder="<?php esc_attr_e( 'Search Wikipedia language versions', 'wordopedia' ); ?>" data-wiki-language-search>
             </label>
             <div class="wiki-language-results" data-wiki-language-results hidden></div>
         </div>

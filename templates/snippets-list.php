@@ -42,7 +42,7 @@ include __DIR__ . '/_header.php';
 ?>
 <div class="wiki-page-head">
     <div>
-        <h1><?php esc_html_e( 'Saved snippets', 'wordopedia' ); ?></h1>
+        <h1 id="wordopedia-saved-snippets-title"><?php esc_html_e( 'Saved snippets', 'wordopedia' ); ?></h1>
     </div>
 </div>
 
@@ -53,10 +53,10 @@ include __DIR__ . '/_header.php';
     <div class="wiki-notice error"><?php echo esc_html( $error_message ); ?></div>
 <?php endif; ?>
 
-<form class="wiki-search wiki-snippet-search" method="get" action="<?php echo esc_url( App::get_saved_snippets_url() ); ?>">
+<form class="wiki-search wiki-snippet-search" method="get" action="<?php echo esc_url( App::get_saved_snippets_url() ); ?>" aria-labelledby="wordopedia-snippet-search-label">
     <label class="wiki-search-field">
-        <span><?php esc_html_e( 'Search snippets', 'wordopedia' ); ?></span>
-        <input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" autocomplete="off" placeholder="<?php esc_attr_e( 'Search saved snippets', 'wordopedia' ); ?>" aria-label="<?php esc_attr_e( 'Search saved snippets', 'wordopedia' ); ?>">
+        <span id="wordopedia-snippet-search-label"><?php esc_html_e( 'Search snippets', 'wordopedia' ); ?></span>
+        <input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" autocomplete="off" placeholder="<?php esc_attr_e( 'Search saved snippets', 'wordopedia' ); ?>" aria-controls="wiki-snippet-list">
     </label>
     <label class="wiki-search-language">
         <span><?php esc_html_e( 'Language', 'wordopedia' ); ?></span>
@@ -87,7 +87,7 @@ include __DIR__ . '/_header.php';
             ?>
         </span>
     </div>
-    <ol class="wiki-snippet-list wiki-snippet-browser-list" id="wiki-snippet-list">
+    <ol class="wiki-snippet-list wiki-snippet-browser-list" id="wiki-snippet-list" aria-labelledby="wordopedia-saved-snippets-title" data-ai-assistant-important>
         <?php foreach ( $snippets as $snippet ) : ?>
             <?php
             $snippet_id = isset( $snippet['post_id'] ) ? absint( $snippet['post_id'] ) : 0;

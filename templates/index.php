@@ -42,6 +42,12 @@ $page_title = __( 'Wordopedia', 'wordopedia' );
 $wiki_current_nav = 'search';
 include __DIR__ . '/_header.php';
 ?>
+<div class="wiki-page-head">
+    <div>
+        <h1><?php esc_html_e( 'Search Wikipedia', 'wordopedia' ); ?></h1>
+    </div>
+</div>
+
 <?php if ( isset( $_GET['wordopedia_error'] ) ) : ?>
     <div class="wiki-notice error"><?php echo esc_html( sanitize_text_field( wp_unslash( $_GET['wordopedia_error'] ) ) ); ?></div>
 <?php endif; ?>
@@ -57,7 +63,8 @@ $language_tabs_hidden = '' === trim( $query );
 include __DIR__ . '/_search-language-tabs.php';
 ?>
 
-<section class="wiki-search-results" id="wiki-search-results" data-wiki-quicksearch-results aria-live="polite">
+<section class="wiki-search-results" id="wiki-search-results" aria-labelledby="wiki-search-results-title" data-wiki-quicksearch-results data-ai-assistant-important aria-live="polite">
+    <h2 id="wiki-search-results-title" class="screen-reader-text"><?php esc_html_e( 'Search results', 'wordopedia' ); ?></h2>
     <?php if ( $search_error ) : ?>
         <div class="wiki-notice error"><?php echo esc_html( $search_error->get_error_message() ); ?></div>
     <?php elseif ( is_array( $results ) ) : ?>
@@ -97,10 +104,10 @@ include __DIR__ . '/_search-language-tabs.php';
     <?php endif; ?>
 </section>
 
-<section class="wiki-home-saved">
+<section class="wiki-home-saved" id="wiki-home-saved-articles" aria-labelledby="wiki-home-saved-articles-title">
     <div class="wiki-section-head">
         <div>
-            <h2><a href="<?php echo esc_url( App::get_saved_articles_url() ); ?>"><?php esc_html_e( 'Saved articles', 'wordopedia' ); ?></a></h2>
+            <h2 id="wiki-home-saved-articles-title"><a href="<?php echo esc_url( App::get_saved_articles_url() ); ?>"><?php esc_html_e( 'Saved articles', 'wordopedia' ); ?></a></h2>
             <p class="wiki-subtitle">
                 <?php
                 echo esc_html(
