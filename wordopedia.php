@@ -4,6 +4,7 @@
  * Description: A personal encyclopedia app powered by WpApp.
  * Version: 1.0.0
  * Author: Alex Kirk
+ * Author URI: https://alex.kirk.at/
  * Text Domain: wordopedia
  * Requires PHP: 7.4
  */
