@@ -47,6 +47,7 @@ class App extends BaseApp {
             'require_login' => true,
             'app_name'      => 'Wordopedia',
             'my_apps'       => true,
+            'my_apps_icon'  => 'dashicons-welcome-learn-more',
         ] );
 
         $this->enqueue_assets();
