@@ -78,7 +78,7 @@ Run the PHP test suite:
 composer test
 ```
 
-The repository includes a WordPress Playground `blueprint.json` that installs the distribution branch and opens Wordopedia at `/wordopedia/`. [Try Wordopedia in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/akirk/wordopedia/main/blueprint.json) · [Try it with a demo search](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/akirk/wordopedia/main/demo.json)
+The repository includes a WordPress Playground `blueprint.json` that installs the distribution branch and opens Wordopedia at `/wordopedia/`. [Try Wordopedia in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/akirk/wordopedia/main/blueprint.json) · [Try it with a demo article](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/akirk/wordopedia/main/demo.json)
 
 ## Wikimedia API usage
 

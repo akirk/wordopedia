@@ -2,14 +2,14 @@
 	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
 	"meta": {
 		"title": "Wordopedia (Demo)",
-		"description": "A personal encyclopedia for searching, browsing, and saving articles. Opens straight into a search so you can explore right away.",
+		"description": "A personal encyclopedia for searching, browsing, and saving articles. Opens straight into an article so you can explore right away.",
 		"author": "Alex Kirk",
 		"categories": [
 			"Apps",
 			"Productivity"
 		]
 	},
-	"landingPage": "/wordopedia/?q=Vienna%2C+Austria",
+	"landingPage": "/wordopedia/article/en/?title=Vienna",
 	"login": true,
 	"steps": [
 		{
