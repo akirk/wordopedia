@@ -1,0 +1,28 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"meta": {
+		"title": "Wordopedia (Demo)",
+		"description": "A personal encyclopedia for searching, browsing, and saving articles. Opens straight into a search so you can explore right away.",
+		"author": "Alex Kirk",
+		"categories": [
+			"Apps",
+			"Productivity"
+		]
+	},
+	"landingPage": "/wordopedia/?q=Vienna%2C+Austria",
+	"login": true,
+	"steps": [
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "git:directory",
+				"url": "https://github.com/akirk/wordopedia",
+				"ref": "dist/main",
+				"refType": "branch"
+			},
+			"options": {
+				"targetFolderName": "wordopedia"
+			}
+		}
+	]
+}
