@@ -150,7 +150,35 @@ class App extends BaseApp {
         add_action( 'init', $register_menu );
     }
 
+    public static function require_login_for_rest( $result, $server, $request ) {
+        if ( is_user_logged_in() ) {
+            return $result;
+        }
+
+        $route = $request->get_route();
+        foreach ( [ self::POST_TYPE, self::POST_TYPE_SNIPPET, self::TAX_LIST ] as $base ) {
+            if ( 0 === strpos( $route, '/wp/v2/' . $base ) ) {
+                return new \WP_Error(
+                    'rest_login_required',
+                    __( 'Authentication is required to read this data.', 'wordopedia' ),
+                    [ 'status' => rest_authorization_required_code() ]
+                );
+            }
+        }
+
+        return $result;
+    }
+
     public function register_post_types(): void {
+        // REST reads must be gated: front-end require_login does not cover the
+        // REST API, and core keys anonymous read access off show_in_rest alone
+        // (not 'public'). Use wp-app's Access gate; if an older wp-app without it
+        // is the loaded copy, fall back to a request filter.
+        $rest_gate = class_exists( '\\WpApp\\Rest\\Access' );
+        if ( ! $rest_gate ) {
+            add_filter( 'rest_pre_dispatch', [ __CLASS__, 'require_login_for_rest' ], 10, 3 );
+        }
+
         register_post_type( self::POST_TYPE, [
             'labels' => [
                 'name'               => __( 'Wordopedia Articles', 'wordopedia' ),
@@ -167,6 +195,7 @@ class App extends BaseApp {
             'show_ui'             => true,
             'show_in_menu'        => true,
             'show_in_rest'        => true,
+            'rest_controller_class' => $rest_gate ? \WpApp\Rest\Access::protect_post_type( self::POST_TYPE, 'read' ) : null,
             'menu_icon'           => 'dashicons-welcome-learn-more',
             'supports'            => [ 'title', 'editor', 'excerpt', 'author', 'revisions', 'custom-fields' ],
             'capability_type'     => 'post',
@@ -191,6 +220,7 @@ class App extends BaseApp {
             'show_ui'             => true,
             'show_in_menu'        => 'edit.php?post_type=' . self::POST_TYPE,
             'show_in_rest'        => true,
+            'rest_controller_class' => $rest_gate ? \WpApp\Rest\Access::protect_post_type( self::POST_TYPE_SNIPPET, 'read' ) : null,
             'menu_icon'           => 'dashicons-excerpt-view',
             'supports'            => [ 'title', 'editor', 'author', 'revisions', 'custom-fields' ],
             'capability_type'     => 'post',
@@ -215,6 +245,7 @@ class App extends BaseApp {
             'show_ui'           => true,
             'show_admin_column' => true,
             'show_in_rest'      => true,
+            'rest_controller_class' => $rest_gate ? \WpApp\Rest\Access::protect_taxonomy( self::TAX_LIST, 'read' ) : null,
             'hierarchical'      => true,
             'rewrite'           => false,
         ] );
