@@ -80,6 +80,8 @@ composer test
 
 The repository includes a WordPress Playground `blueprint.json` that installs the distribution branch and opens Wordopedia at `/wordopedia/`. [Try Wordopedia in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/akirk/wordopedia/main/blueprint.json) · [Try it with a demo article](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/akirk/wordopedia/main/demo.json)
 
+[Try it in OpenStation](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/akirk/wordopedia/main/blueprint-openstation.json) — the same app opened in desktop mode with the [OpenStation](https://github.com/WordPress/openstation) plugin.
+
 ## Wikimedia API usage
 
 The app reads live Wikipedia data through the Wikimedia Action API. To avoid overloading Wikimedia services, requests are kept user-driven and cacheable:
