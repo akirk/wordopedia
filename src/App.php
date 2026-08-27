@@ -46,8 +46,12 @@ class App extends BaseApp {
         $this->app = new WpApp( $this->get_template_dir(), $this->get_url_path(), [
             'require_login' => true,
             'app_name'      => 'Wordopedia',
-            'my_apps'       => true,
-            'my_apps_icon'  => plugins_url( 'assets/icon.svg', dirname( __DIR__ ) . '/wordopedia.php' ),
+            'launcher'      => true,
+            'app_icon'      => plugins_url( 'assets/icon.svg', dirname( __DIR__ ) . '/wordopedia.php' ),
+            // Owned content: REST reads are gated with the app's capability and
+            // OpenStation keeps these menus out of its dock.
+            'post_types'    => [ self::POST_TYPE, self::POST_TYPE_SNIPPET ],
+            'taxonomies'    => [ self::TAX_LIST ],
         ] );
 
         $this->enqueue_assets();
@@ -170,12 +174,10 @@ class App extends BaseApp {
     }
 
     public function register_post_types(): void {
-        // REST reads must be gated: front-end require_login does not cover the
-        // REST API, and core keys anonymous read access off show_in_rest alone
-        // (not 'public'). Use wp-app's Access gate; if an older wp-app without it
-        // is the loaded copy, fall back to a request filter.
-        $rest_gate = class_exists( '\\WpApp\\Rest\\Access' );
-        if ( ! $rest_gate ) {
+        // REST reads are gated by wp-app via the 'post_types' app option. If an
+        // older wp-app without that gate is the loaded copy, fall back to a
+        // request filter.
+        if ( ! class_exists( '\\WpApp\\Rest\\Access' ) ) {
             add_filter( 'rest_pre_dispatch', [ __CLASS__, 'require_login_for_rest' ], 10, 3 );
         }
 
@@ -195,7 +197,6 @@ class App extends BaseApp {
             'show_ui'             => true,
             'show_in_menu'        => true,
             'show_in_rest'        => true,
-            'rest_controller_class' => $rest_gate ? \WpApp\Rest\Access::protect_post_type( self::POST_TYPE, 'read' ) : null,
             'menu_icon'           => 'dashicons-welcome-learn-more',
             'supports'            => [ 'title', 'editor', 'excerpt', 'author', 'revisions', 'custom-fields' ],
             'capability_type'     => 'post',
@@ -220,7 +221,6 @@ class App extends BaseApp {
             'show_ui'             => true,
             'show_in_menu'        => 'edit.php?post_type=' . self::POST_TYPE,
             'show_in_rest'        => true,
-            'rest_controller_class' => $rest_gate ? \WpApp\Rest\Access::protect_post_type( self::POST_TYPE_SNIPPET, 'read' ) : null,
             'menu_icon'           => 'dashicons-excerpt-view',
             'supports'            => [ 'title', 'editor', 'author', 'revisions', 'custom-fields' ],
             'capability_type'     => 'post',
@@ -245,7 +245,6 @@ class App extends BaseApp {
             'show_ui'           => true,
             'show_admin_column' => true,
             'show_in_rest'      => true,
-            'rest_controller_class' => $rest_gate ? \WpApp\Rest\Access::protect_taxonomy( self::TAX_LIST, 'read' ) : null,
             'hierarchical'      => true,
             'rewrite'           => false,
         ] );
