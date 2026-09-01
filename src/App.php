@@ -97,11 +97,32 @@ class App extends BaseApp {
         $style_path  = dirname( __DIR__ ) . '/assets/css/app.css';
         $script_path = dirname( __DIR__ ) . '/assets/js/app.js';
 
+        // This runs at plugin load, before a route is known, so an omitted
+        // scope would resolve to '' and put the assets on every app's pages.
+        $scope = $this->get_url_path();
+
         wp_app_enqueue_style(
             'wordopedia-app',
             plugins_url( 'assets/css/app.css', $plugin_file ),
             [],
-            file_exists( $style_path ) ? (string) filemtime( $style_path ) : false
+            file_exists( $style_path ) ? (string) filemtime( $style_path ) : false,
+            $scope
+        );
+
+        // wp_localize_script() cannot be used here: wp_app_enqueue_script()
+        // prints its own tag instead of registering the handle with WP_Scripts,
+        // so core has nothing to attach the data to. Registered first so the
+        // config is defined before app.js runs.
+        wp_app_add_inline_script(
+            'wordopedia-app-config',
+            'window.wordopediaAppConfig = ' . wp_json_encode(
+                [
+                    'apiUserAgent' => self::wordopedia_user_agent(),
+                    'isPlayground' => self::is_wordpress_playground(),
+                ]
+            ) . ';',
+            true,
+            $scope
         );
 
         wp_app_enqueue_script(
@@ -109,16 +130,8 @@ class App extends BaseApp {
             plugins_url( 'assets/js/app.js', $plugin_file ),
             [],
             file_exists( $script_path ) ? (string) filemtime( $script_path ) : false,
-            true
-        );
-
-        wp_localize_script(
-            'wordopedia-app',
-            'wordopediaAppConfig',
-            [
-                'apiUserAgent' => self::wordopedia_user_agent(),
-                'isPlayground' => self::is_wordpress_playground(),
-            ]
+            true,
+            $scope
         );
     }
 
