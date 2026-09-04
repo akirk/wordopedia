@@ -1,13 +1,17 @@
 <?php
 /**
  * Plugin Name: Wordopedia
- * Description: A personal encyclopedia app powered by WpApp.
+ * Plugin URI: https://github.com/akirk/wordopedia
+ * Description: Search Wikipedia from inside WordPress, read articles in a clean app, and keep the ones you need as saved posts with snippets and lists.
  * Version: 1.0.0
- * Author: Alex Kirk
- * Author URI: https://alex.kirk.at/
- * Text Domain: wordopedia
+ * Requires at least: 6.0
  * Tested up to: 7.1
  * Requires PHP: 7.4
+ * Author: Alex Kirk
+ * Author URI: https://alex.kirk.at/
+ * License: GPL-2.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain: wordopedia
  */
 
 namespace Akirk\Wordopedia;

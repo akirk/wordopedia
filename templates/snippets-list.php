@@ -79,10 +79,12 @@ include __DIR__ . '/_header.php';
     <div class="wiki-meta wiki-snippet-browser-summary">
         <span>
             <?php
-            printf(
-                /* translators: %d: number of saved snippets */
-                esc_html( _n( '%d saved snippet', '%d saved snippets', $snippet_count, 'wordopedia' ) ),
-                $snippet_count
+            echo esc_html(
+                sprintf(
+                    /* translators: %d: number of saved snippets */
+                    _n( '%d saved snippet', '%d saved snippets', $snippet_count, 'wordopedia' ),
+                    $snippet_count
+                )
             );
             ?>
         </span>

@@ -45,9 +45,9 @@ include __DIR__ . '/_header.php';
                 <li data-wiki-language-item data-language-code="<?php echo esc_attr( $code ); ?>">
                     <input type="hidden" name="languages[]" value="<?php echo esc_attr( $code ); ?>">
                     <span class="wiki-language-name"><?php echo esc_html( $label . ' (' . $code . ')' ); ?></span>
-                    <button class="wiki-btn secondary wiki-icon-btn" type="button" data-wiki-language-move="up" aria-label="<?php echo esc_attr( sprintf( __( 'Move %s up', 'wordopedia' ), $label ) ); ?>" title="<?php esc_attr_e( 'Move up', 'wordopedia' ); ?>">&uarr;</button>
-                    <button class="wiki-btn secondary wiki-icon-btn" type="button" data-wiki-language-move="down" aria-label="<?php echo esc_attr( sprintf( __( 'Move %s down', 'wordopedia' ), $label ) ); ?>" title="<?php esc_attr_e( 'Move down', 'wordopedia' ); ?>">&darr;</button>
-                    <button class="wiki-btn secondary wiki-icon-btn" type="button" data-wiki-language-remove aria-label="<?php echo esc_attr( sprintf( __( 'Remove %s', 'wordopedia' ), $label ) ); ?>" title="<?php esc_attr_e( 'Remove', 'wordopedia' ); ?>">&times;</button>
+                    <button class="wiki-btn secondary wiki-icon-btn" type="button" data-wiki-language-move="up" aria-label="<?php /* translators: %s: name of the Wikipedia language version. */ echo esc_attr( sprintf( __( 'Move %s up', 'wordopedia' ), $label ) ); ?>" title="<?php esc_attr_e( 'Move up', 'wordopedia' ); ?>">&uarr;</button>
+                    <button class="wiki-btn secondary wiki-icon-btn" type="button" data-wiki-language-move="down" aria-label="<?php /* translators: %s: name of the Wikipedia language version. */ echo esc_attr( sprintf( __( 'Move %s down', 'wordopedia' ), $label ) ); ?>" title="<?php esc_attr_e( 'Move down', 'wordopedia' ); ?>">&darr;</button>
+                    <button class="wiki-btn secondary wiki-icon-btn" type="button" data-wiki-language-remove aria-label="<?php /* translators: %s: name of the Wikipedia language version. */ echo esc_attr( sprintf( __( 'Remove %s', 'wordopedia' ), $label ) ); ?>" title="<?php esc_attr_e( 'Remove', 'wordopedia' ); ?>">&times;</button>
                 </li>
             <?php endforeach; ?>
         </ol>

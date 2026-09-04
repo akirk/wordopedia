@@ -128,10 +128,12 @@ $render_toc_items = static function( array $items ) use ( &$render_toc_items ): 
             <div class="wiki-meta">
                 <span data-wiki-snippet-count>
                     <?php
-                    printf(
-                        /* translators: %d: number of saved snippets */
-                        esc_html( _n( '%d snippet', '%d snippets', $snippet_count, 'wordopedia' ) ),
-                        $snippet_count
+                    echo esc_html(
+                        sprintf(
+                            /* translators: %d: number of saved snippets */
+                            _n( '%d snippet', '%d snippets', $snippet_count, 'wordopedia' ),
+                            $snippet_count
+                        )
                     );
                     ?>
                 </span>

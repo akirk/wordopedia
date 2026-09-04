@@ -420,8 +420,10 @@ class App extends BaseApp {
         $post_id = isset( $_POST['post_id'] ) ? absint( wp_unslash( $_POST['post_id'] ) ) : 0;
         check_admin_referer( self::NONCE_SIDELOAD_IMAGES . '_' . $post_id );
 
+        // Each entry is normalized and then matched against the article's own remote
+        // image URLs in sideload_saved_article_images(); anything else is discarded.
         $image_urls = isset( $_POST['image_urls'] ) && is_array( $_POST['image_urls'] )
-            ? wp_unslash( $_POST['image_urls'] )
+            ? wp_unslash( $_POST['image_urls'] ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated against an allow list below.
             : [];
 
         $result = self::sideload_saved_article_images( $post_id, $image_urls );
@@ -450,8 +452,10 @@ class App extends BaseApp {
 
         check_admin_referer( self::NONCE_SAVE_SETTINGS );
 
+        // normalize_language_list() below keeps only values that resolve to a known
+        // Wikipedia language code and drops everything else.
         $languages = isset( $_POST['languages'] ) && is_array( $_POST['languages'] )
-            ? wp_unslash( $_POST['languages'] )
+            ? wp_unslash( $_POST['languages'] ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated by normalize_language_list() below.
             : [];
         $languages = self::normalize_language_list( $languages );
 
@@ -1805,7 +1809,7 @@ class App extends BaseApp {
         }
 
         $timestamp = strtotime( $value );
-        return $timestamp ? date( $format, $timestamp ) : $value;
+        return $timestamp ? gmdate( $format, $timestamp ) : $value;
     }
 
     private static function latest_datetime( array $values ): string {

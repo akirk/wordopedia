@@ -1,10 +1,23 @@
 # Wordopedia
 
+- Contributors: akirk
+- Tags: encyclopedia, research, notes, bookmarks, wp-app
+- Requires at least: 6.0
+- Requires PHP: 7.4
+- Tested up to: 7.1
+- Stable tag: 1.0.0
+- License: GPL-2.0-or-later
+- License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+Search Wikipedia from inside WordPress, read articles in a clean app, and keep the ones you need as saved posts with snippets and lists.
+
+## Description
+
 Wordopedia is a logged-in WordPress app for building a personal encyclopedia from Wikipedia. It is powered by [WpApp](https://github.com/akirk/wp-app) and runs inside WordPress at `/wordopedia/`.
 
 The app lets users search live Wikipedia, read articles in a clean app interface, save useful articles into WordPress, refetch those articles later, and collect selected passages as reusable snippets.
 
-## What the app does
+### What the app does
 
 Wordopedia turns Wikipedia into a private research space inside WordPress. Users can search Wikipedia in their preferred language versions, read articles in the app, switch between available translations, and follow rewritten article links without leaving the Wordopedia interface where possible.
 
@@ -16,7 +29,7 @@ Under the hood, Wordopedia stores data with native WordPress post, post meta, ta
 
 All app routes require a logged-in WordPress user. Wordopedia is a shared library: reads require `read`; saves require `edit_posts`; updates and refetches also require `edit_post`; snippet deletes require `delete_post`.
 
-## Data model
+### Data model
 
 Wordopedia does not create custom database tables.
 
@@ -28,7 +41,7 @@ Wordopedia does not create custom database tables.
 
 Saved article and snippet post types are visible in the WordPress admin and REST API, but are not public front-end post types. Wordopedia provides the front-end reading interface.
 
-## Wikipedia workflow
+### Wikipedia workflow
 
 1. Search Wikipedia from `/wordopedia/`.
 2. Open a result to read the live article inside Wordopedia.
@@ -39,7 +52,7 @@ Saved article and snippet post types are visible in the WordPress admin and REST
 7. Use the saved article and saved snippet screens to find local material later.
 8. Refetch a saved article when the local copy should be updated from Wikipedia.
 
-## Assistant and abilities integration
+### Assistant and abilities integration
 
 When WordPress provides the Abilities API, Wordopedia registers abilities under the `wordopedia` category:
 
@@ -57,14 +70,23 @@ When WordPress provides the Abilities API, Wordopedia registers abilities under 
 
 The plugin also adds AI assistant domain, instruction, and welcome-tip hints so assistant responses can link back to Wordopedia app URLs, cite Wikipedia source URLs where appropriate, find article media such as SVG files with Wikimedia Commons attribution metadata, and suggest useful Wordopedia tasks from the app screens.
 
-## Requirements
+### Wikimedia API usage
 
-- WordPress with pretty permalinks enabled.
-- PHP 7.4 or newer.
-- Composer dependencies installed, including `akirk/wp-app`.
-- Logged-in WordPress users for app access.
+The app reads live Wikipedia data through the Wikimedia Action API. To avoid overloading Wikimedia services, requests are kept user-driven and cacheable:
 
-## Development
+- Search responses are cached briefly in WordPress transients.
+- Article metadata and article HTML are cached longer, while explicit article refreshes bypass the cache.
+- Live browser search waits before requesting, ignores one-character searches, and cancels superseded searches.
+- API requests use JSON, include `origin=*` for CORS, and surface Wikimedia API errors and `Retry-After` rate-limit responses instead of hiding them behind a generic HTTP error.
+- Normal WordPress installs send a descriptive `User-Agent` for server-side requests and `Api-User-Agent` for browser-side requests.
+
+WordPress Playground runs PHP HTTP requests through a browser-backed CORS proxy. That proxy does not allow forwarding the `User-Agent` request header, so the app detects Playground with `PLAYGROUND_AUTO_LOGIN_AS_USER` and avoids sending that header there. This is a Playground transport workaround only; normal WordPress installs still identify requests according to Wikimedia API guidance.
+
+Wordopedia is an independent plugin. It is not affiliated with, endorsed by, or sponsored by the Wikimedia Foundation. Wikipedia content is made available by the Wikimedia projects under their own licenses and terms of use.
+
+### Development
+
+Development of this plugin happens [on GitHub](https://github.com/akirk/wordopedia). Pull requests are welcome.
 
 Install dependencies:
 
@@ -82,18 +104,45 @@ The repository includes a WordPress Playground `blueprint.json` that installs th
 
 [Try it in OpenStation](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/akirk/wordopedia/main/blueprint-openstation.json) — the same app opened in desktop mode with the [OpenStation](https://github.com/WordPress/openstation) plugin.
 
-## Wikimedia API usage
+## Installation
 
-The app reads live Wikipedia data through the Wikimedia Action API. To avoid overloading Wikimedia services, requests are kept user-driven and cacheable:
+1. Upload the `wordopedia` directory to the `/wp-content/plugins/` directory.
+1. Activate the plugin through the 'Plugins' menu in WordPress.
+1. Make sure pretty permalinks are enabled, then open `/wordopedia/` while logged in.
 
-- Search responses are cached briefly in WordPress transients.
-- Article metadata and article HTML are cached longer, while explicit article refreshes bypass the cache.
-- Live browser search waits before requesting, ignores one-character searches, and cancels superseded searches.
-- API requests use JSON, include `origin=*` for CORS, and surface Wikimedia API errors and `Retry-After` rate-limit responses instead of hiding them behind a generic HTTP error.
-- Normal WordPress installs send a descriptive `User-Agent` for server-side requests and `Api-User-Agent` for browser-side requests.
+## Frequently Asked Questions
 
-WordPress Playground runs PHP HTTP requests through a browser-backed CORS proxy. That proxy does not allow forwarding the `User-Agent` request header, so the app detects Playground with `PLAYGROUND_AUTO_LOGIN_AS_USER` and avoids sending that header there. This is a Playground transport workaround only; normal WordPress installs still identify requests according to Wikimedia API guidance.
+### Does this plugin create custom database tables?
+No. Saved articles and snippets are custom post types, lists are a taxonomy, article details are post meta, and preferred languages are user meta. Deleting the plugin leaves your database as slim as it was before.
 
-## License
+### Do I need an account or an API key?
+No. The app reads public Wikipedia data through the Wikimedia Action API, which needs no key. You do need to be logged in to your own WordPress, because Wordopedia is a logged-in app rather than a public front end.
 
-GPL-2.0-or-later.
+### Who can see the saved articles?
+Wordopedia behaves like a shared library for the site's logged-in users: reading requires the `read` capability, saving requires `edit_posts`, updating and refetching an article also require `edit_post` on that article, and deleting a snippet requires `delete_post`. The post types are not public, so saved articles are not exposed as front-end posts.
+
+### Can I keep a saved article up to date?
+Yes. Every saved article records the Wikipedia revision it came from, and you can refetch it from the article screen to pull the current version into WordPress.
+
+### What are snippets?
+Snippets are passages you highlight while reading. They are saved as child posts of the saved article, keep a link back to the source, and have their own browser with search and language filtering.
+
+### Can an AI assistant use this?
+Yes, when your WordPress provides the Abilities API. Wordopedia then registers abilities for searching Wikipedia, fetching and saving articles, listing and refetching saved articles, and creating and searching snippets, plus assistant hints so answers can link back into the app and cite the Wikipedia source.
+
+### Is this an official Wikipedia or Wikimedia plugin?
+No. Wordopedia is an independent plugin and is not affiliated with, endorsed by, or sponsored by the Wikimedia Foundation.
+
+## Screenshots
+
+1. Reading a Wikipedia article inside the Wordopedia app, with the search field, the language switcher and the Save article button above it.
+
+## Changelog
+
+### 1.0.0
+- Search Wikipedia across your preferred language versions and read articles inside WordPress.
+- Save articles as `wordopedia_article` posts with page ID, language, source URL, thumbnail, revision and date metadata.
+- Refetch saved articles to update the local copy from Wikipedia.
+- Group saved articles with the hierarchical `wordopedia_list` taxonomy.
+- Highlight passages while reading and store them as `wordopedia_snippet` posts with their own searchable browser.
+- Register Wikipedia and snippet abilities plus assistant hints when the Abilities API is available.

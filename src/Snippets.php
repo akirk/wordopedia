@@ -532,6 +532,12 @@ trait Snippets {
     }
 
     private static function snippet_save_input_from_request(): array {
+        // The nonce is verified by the callers (handle_save_snippet() and
+        // ajax_save_snippet()) before this reads the request. The raw 'text' and
+        // 'html' values are deliberately unsanitized here: snippet_content_from_input()
+        // rebuilds them from a DOM allow list of inline tags, escaping every text node
+        // and attribute, and display runs through wp_kses_post().
+        // phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
         return [
             'parent_post_id' => isset( $_POST['parent_post_id'] ) ? absint( wp_unslash( $_POST['parent_post_id'] ) ) : 0,
             'page_id'        => isset( $_POST['page_id'] ) ? absint( wp_unslash( $_POST['page_id'] ) ) : 0,
@@ -541,14 +547,19 @@ trait Snippets {
             'text'           => isset( $_POST['text'] ) && is_scalar( $_POST['text'] ) ? (string) wp_unslash( $_POST['text'] ) : '',
             'html'           => isset( $_POST['html'] ) && is_scalar( $_POST['html'] ) ? (string) wp_unslash( $_POST['html'] ) : '',
         ];
+        // phpcs:enable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
     }
 
     private static function snippet_update_input_from_request(): array {
+        // Nonce verified by the callers; see snippet_save_input_from_request() for why
+        // 'text' and 'html' are read raw.
+        // phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
         return [
             'snippet_title' => isset( $_POST['snippet_title'] ) ? sanitize_text_field( wp_unslash( $_POST['snippet_title'] ) ) : '',
             'text'          => isset( $_POST['text'] ) && is_scalar( $_POST['text'] ) ? (string) wp_unslash( $_POST['text'] ) : '',
             'html'          => isset( $_POST['html'] ) && is_scalar( $_POST['html'] ) ? (string) wp_unslash( $_POST['html'] ) : '',
         ];
+        // phpcs:enable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
     }
 
     private static function send_snippet_json_response( $result ): void {
@@ -609,7 +620,7 @@ trait Snippets {
         $text = preg_replace( '~<\s*br\s*/?>~i', "\n", $text );
         $text = preg_replace( '~</p\s*>~i', "\n\n", is_string( $text ) ? $text : '' );
         $text = preg_replace( '~<!--.*?-->~s', '', is_string( $text ) ? $text : '' );
-        $text = function_exists( 'wp_strip_all_tags' ) ? wp_strip_all_tags( $text ) : strip_tags( $text );
+        $text = wp_strip_all_tags( is_string( $text ) ? $text : '' );
         $text = str_replace( "\xc2\xa0", ' ', $text );
         $text = str_replace( [ "\r\n", "\r" ], "\n", $text );
         $text = preg_replace( "/[ \t]+/", ' ', $text );
