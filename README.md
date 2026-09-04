@@ -135,7 +135,7 @@ No. Wordopedia is an independent plugin and is not affiliated with, endorsed by,
 
 ## Screenshots
 
-1. Reading a Wikipedia article inside the Wordopedia app, with the saved-article actions and snippets alongside it.
+1. Reading a Wikipedia article inside the Wordopedia app, with the search field, the language switcher and the Save article button above it.
 
 ## Changelog
 
