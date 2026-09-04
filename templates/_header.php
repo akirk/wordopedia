@@ -10,7 +10,7 @@ $wiki_current_nav = isset( $wiki_current_nav ) ? sanitize_key( $wiki_current_nav
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo wp_app_title( isset( $page_title ) ? $page_title : __( 'Wordopedia', 'wordopedia' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_app_title escapes. ?></title>
+    <title><?php wp_app_the_title( isset( $page_title ) ? $page_title : __( 'Wordopedia', 'wordopedia' ) ); ?></title>
     <?php wp_app_head(); ?>
 </head>
 <body>
