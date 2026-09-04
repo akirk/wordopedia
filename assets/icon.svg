@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- The mark the app shows in its own header: a serif W in a thin circle, on
-     the surface tone the app uses. Deliberately not the Wikipedia W, which is
-     a Wikimedia Foundation mark; this plugin is unaffiliated. -->
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-	<rect width="128" height="128" rx="26" ry="26" fill="#f8f9fa"/>
-	<circle cx="64" cy="64" r="45.44" fill="none" stroke="#202122" stroke-width="4"/>
-	<text x="64" y="79.2" font-family="Georgia, 'Times New Roman', Times, 'Nimbus Roman', serif" font-size="46.08" fill="#202122" text-anchor="middle">W</text>
-</svg>
+<!-- The app's own mark: a drawn book cover in the app's primary blue.
+     Deliberately not the Wikipedia W, which is a Wikimedia Foundation mark;
+     this plugin is unaffiliated. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 256 256"><rect width="256" height="256" rx="51" ry="51" fill="#f8f9fa"/><g>
+	<rect x="62" y="52" width="132" height="156" rx="7" ry="7" fill="#36c"/>
+	<rect x="62" y="52" width="30" height="156" rx="7" ry="7" fill="#24478f"/>
+	<rect x="82" y="52" width="10" height="156" fill="#24478f"/>
+	<text x="143" y="153" font-family="Georgia, 'Times New Roman', Times, 'Nimbus Roman', serif" font-size="76" fill="#f8f9fa" text-anchor="middle">W</text>
+	<rect x="194" y="60" width="9" height="140" rx="4" ry="4" fill="#a2a9b1"/>
+</g></svg>
