@@ -3,7 +3,7 @@
  * Plugin Name: Wordopedia
  * Plugin URI: https://github.com/akirk/wordopedia
  * Description: Search Wikipedia from inside WordPress, read articles in a clean app, and keep the ones you need as saved posts with snippets and lists.
- * Version: 1.0.0
+ * Version: 1.0.0+bfc996a64ac3
  * Requires at least: 6.0
  * Tested up to: 7.1
  * Requires PHP: 7.4
