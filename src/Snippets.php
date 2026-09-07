@@ -1,5 +1,5 @@
 <?php
-
+// phpcs:disable WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Snippet lookups intentionally query word metadata.
 namespace Akirk\Wordopedia;
 
 trait Snippets {
