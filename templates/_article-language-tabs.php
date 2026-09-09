@@ -109,7 +109,7 @@ $show_actions = $dropdown_languages || ( current_user_can( 'edit_posts' ) && ! e
     <?php if ( $show_actions ) : ?>
         <span class="wiki-language-tab-actions">
             <?php if ( $dropdown_languages ) : ?>
-                <select class="wiki-language-tab-select" aria-label="<?php esc_attr_e( 'Other article languages', 'wordopedia' ); ?>" onchange="if (this.value) window.location.href = this.value;">
+                <select class="wiki-language-tab-select" aria-label="<?php esc_attr_e( 'Other article languages', 'wordopedia' ); ?>" data-wiki-location-select>
                     <option value="" selected><?php esc_html_e( 'Other languages', 'wordopedia' ); ?></option>
                     <?php foreach ( $dropdown_languages as $translation ) : ?>
                         <option value="<?php echo esc_url( $translation['app_url'] ); ?>">

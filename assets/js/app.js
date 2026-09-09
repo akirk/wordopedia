@@ -13,6 +13,14 @@
         return options;
     }
 
+    document.querySelectorAll('[data-wiki-location-select]').forEach(function (select) {
+        select.addEventListener('change', function () {
+            if (select.value) {
+                window.location.href = select.value;
+            }
+        });
+    });
+
     document.querySelectorAll('[data-wiki-nav-menu-root]').forEach(function (root) {
         var toggle = root.querySelector('[data-wiki-nav-menu-toggle]');
         var panel = root.querySelector('[data-wiki-nav-menu-panel]');
