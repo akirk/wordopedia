@@ -12,7 +12,7 @@ $is_saved_view = ! empty( $is_saved_view );
 <?php if ( ! $is_saved_view && ! empty( $article['available_languages'] ) ) : ?>
     <label class="wiki-language-switcher">
         <span><?php esc_html_e( 'Language', 'wordopedia' ); ?></span>
-        <select onchange="if (this.value) window.location.href = this.value;">
+        <select data-wiki-location-select>
             <option value="<?php echo esc_url( $article['app_url'] ); ?>" selected><?php echo esc_html( $article['language_label'] . ' (' . $article['language'] . ')' ); ?></option>
             <?php foreach ( $article['available_languages'] as $translation ) : ?>
                 <option value="<?php echo esc_url( $translation['app_url'] ); ?>">
