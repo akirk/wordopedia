@@ -1960,7 +1960,7 @@ class App extends BaseApp {
         $id = absint( $id );
         if ( $id ) {
             $post = get_post( $id );
-            return $post instanceof \WP_Post ? $post : null;
+            return $post instanceof \WP_Post && $post->post_type === self::POST_TYPE ? $post : null;
         }
 
         $slug = sanitize_title( $slug );
