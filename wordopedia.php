@@ -3,7 +3,7 @@
  * Plugin Name: Wordopedia
  * Plugin URI: https://wpapps.kirk.at/apps/wordopedia/
  * Description: Search Wikipedia from inside WordPress, read articles in a clean app, and keep the ones you need as saved posts with snippets and lists.
- * Version: 1.0.0
+ * Version: 1.0.0+d33e460df458
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Alex Kirk
