@@ -65,25 +65,26 @@ class AppHelpersTest extends TestCase {
         );
     }
 
-    public function test_article_url_prefers_title_for_readable_urls(): void {
-        $this->assertSame(
-            'https://example.test/wordopedia/article/de?title=Albert%20Einstein',
-            App::get_article_url( 'de', 'Albert Einstein', 736 )
-        );
+    /** @dataProvider articleUrls */
+    public function test_article_url_uses_title_before_page_id( array $arguments, string $expected ): void {
+        $this->assertSame( $expected, App::get_article_url( ...$arguments ) );
     }
 
-    public function test_article_url_can_use_title(): void {
-        $this->assertSame(
-            'https://example.test/wordopedia/article/en?title=Albert%20Einstein',
-            App::get_article_url( 'en', 'Albert Einstein' )
-        );
-    }
-
-    public function test_article_url_can_use_page_id_when_title_is_missing(): void {
-        $this->assertSame(
-            'https://example.test/wordopedia/article/de?page_id=736',
-            App::get_article_url( 'de', '', 736 )
-        );
+    public static function articleUrls(): array {
+        return [
+            'title preferred over page id' => [
+                [ 'de', 'Albert Einstein', 736 ],
+                'https://example.test/wordopedia/article/de?title=Albert%20Einstein',
+            ],
+            'title without page id' => [
+                [ 'en', 'Albert Einstein' ],
+                'https://example.test/wordopedia/article/en?title=Albert%20Einstein',
+            ],
+            'page id without title' => [
+                [ 'de', '', 736 ],
+                'https://example.test/wordopedia/article/de?page_id=736',
+            ],
+        ];
     }
 
     public function test_saved_articles_url(): void {
