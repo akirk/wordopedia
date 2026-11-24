@@ -395,6 +395,25 @@ class AppHelpersTest extends TestCase {
         $this->assertSame( $post, $resolved );
     }
 
+    /** @dataProvider routedPostTypes */
+    public function test_saved_article_route_only_returns_article_posts( string $post_type, bool $is_article ): void {
+        $post = new WP_Post( [
+            'ID'          => 17,
+            'post_type'   => $post_type,
+            'post_status' => 'publish',
+        ] );
+        $GLOBALS['wordopedia_app_test_posts'] = [ 17 => $post ];
+
+        $this->assertSame( $is_article ? $post : null, App::get_saved_article_from_route( 17 ) );
+    }
+
+    public static function routedPostTypes(): array {
+        return [
+            'saved article' => [ App::POST_TYPE, true ],
+            'unrelated post must not become an article' => [ 'post', false ],
+        ];
+    }
+
     public function test_article_media_input_schema_supports_svg_filtering(): void {
         $schema = $this->invokePrivateStatic( 'article_media_input_schema', [] );
         $properties = $schema['properties'];
